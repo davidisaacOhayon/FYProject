@@ -2,9 +2,10 @@ import {useState} from 'react';
 import Map   from 'react-map-gl/mapbox';
 import DeckGL, {GeoJsonLayer} from 'deck.gl';  
 import 'mapbox-gl/dist/mapbox-gl.css';
+import "./Stylesheets/main.css";
 
 
-
+ 
 
 
 export default function IndexMap(){
@@ -15,22 +16,24 @@ export default function IndexMap(){
 
     const INITIAL_MAP_STATE = {
 
-        latitude: 39.8283,
-        longitude: -98.5795,
-        zoom: 3,
+        latitude: 35.9375,
+        longitude: 14.3754,
+        zoom: 10,
         bearing: 0,
-        pitch: 30
+        pitch: 0
+
     }
+
+    const layers : 
 
 
     return (
         <>
         <DeckGL
             initialViewState={INITIAL_MAP_STATE}
-            controller={true}
-        >
-            <Map mapStyle={"mapbox://styles/mapbox/streets-v9"} mapboxAccessToken={MapAccessToken} />
-
+            controller={true} >
+            <h1>Hell</h1>
+            <Map id={"MainMap"} mapStyle={"mapbox://styles/mapbox/dark-v11"} mapboxAccessToken={MapAccessToken} />
 
         </DeckGL>
 

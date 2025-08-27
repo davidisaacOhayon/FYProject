@@ -1,0 +1,9 @@
+h1{
+    position: relative;
+    z-index: 500;
+}
+
+#MainMap{
+    position: absolute;
+    z-index: 10;
+}
