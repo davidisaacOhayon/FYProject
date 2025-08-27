@@ -24,16 +24,22 @@ export default function IndexMap(){
 
     }
 
-    const layers : 
+ 
 
 
     return (
         <>
         <DeckGL
             initialViewState={INITIAL_MAP_STATE}
-            controller={true} >
-            <h1>Hell</h1>
-            <Map id={"MainMap"} mapStyle={"mapbox://styles/mapbox/dark-v11"} mapboxAccessToken={MapAccessToken} />
+            controller={true}>
+
+            <div className={"map-controls"}>
+                <button className={"map-control-btn"}>Filters</button>
+                <button className={"map-control-btn"}>Pollutants</button>
+                <button className={"map-control-btn"}>Borders</button>
+
+            </div>
+            <Map id={"MainMap"} mapStyle={"mapbox://styles/ohayorino/cmet1zrt8002r01sc8rfq2fw2"} mapboxAccessToken={MapAccessToken} />
 
         </DeckGL>
 
