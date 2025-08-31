@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import Map from 'react-map-gl/mapbox';
 
-import DeckGL, { ContourLayer } from 'deck.gl';
+import DeckGL, { PolygonLayer } from 'deck.gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
 import mData from './Datasets/data.json';
@@ -18,23 +18,12 @@ export default function IndexMap() {
     pitch: 0,
   };
 
-  const layer = new ContourLayer({
-    id: 'contour-layer',
-    data: mData,
-    getPosition: (d) => d.Coordinates, 
-    pickable: true,
-    aggregation: 'MAX',
-    contours: [
-      { threshold: 1, color: [255, 0, 0], strokeWidth: 2, zIndex: 1 },
-      { threshold: [3, 10], color: [55, 0, 55], zIndex: 0 },
-      { threshold: 5, color: [0, 255, 0], strokeWidth: 6, zIndex: 2 },
-      { threshold: 15, color: [0, 0, 255], strokeWidth: 4, zIndex: 3 },
-    ],
-    cellSize: 60000,
+  const layer = new PolygonLayer({
+
   });
 
   useEffect(() => {
-    mData.forEach((e) => console.log(e.Coordinates));
+    mData.forEach((e) => console.log(e.PolygonCoordinates));
   }, []);
 
   return (
