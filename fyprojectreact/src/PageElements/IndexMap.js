@@ -4,7 +4,7 @@ import Map from 'react-map-gl/mapbox';
 import DeckGL, { PolygonLayer } from 'deck.gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
-import mData from './Datasets/data.json';
+import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
 
 export default function IndexMap() {
   const MapAccessToken =
@@ -19,11 +19,19 @@ export default function IndexMap() {
   };
 
   const layer = new PolygonLayer({
+    id: "PolygonLayer",
+    data: mData,
+    getPolygon : d => d.geometry.coordinates[0][0],
+    getLineColor: [255, 255, 255],
+    getFillColor: d => d.properties.fillColor,
+    getLineWidth: 20,
+    lineWidthMinPixels: 1,
+    pickable: true
 
   });
 
   useEffect(() => {
-    mData.forEach((e) => console.log(e.PolygonCoordinates));
+    // mData.forEach((e) => console.log(e.PolygonCoordinates));
   }, []);
 
   return (
