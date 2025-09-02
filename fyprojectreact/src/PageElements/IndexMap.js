@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Map from 'react-map-gl/mapbox';
 
-import DeckGL, { PolygonLayer } from 'deck.gl';
+import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
 import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
-
+import tData from './Datasets/MaltaDistricts.Json';
 export default function IndexMap() {
   const MapAccessToken =
     'pk.eyJ1Ijoib2hheW9yaW5vIiwiYSI6ImNtZXN1bjd4ODA4d2QyanM4aTBiNm9zN2gifQ.JAp21RU5bHyH5Y0xzdOZvQ';
@@ -18,16 +18,27 @@ export default function IndexMap() {
     pitch: 0,
   };
 
-  const layer = new PolygonLayer({
+
+  // Text layers to display all Maltese district names
+  const DistrictLayer = new TextLayer({
+    id: 'TextLayer',
+    data: tData,
+    getPosition: d => d.coordinates,
+    getText: d => d.name,
+    getColor: [255, 255, 255],
+    getSize: 16
+
+  });
+  // Polygon layer to display all Maltese districts
+  const Regionlayer = new PolygonLayer({
     id: "PolygonLayer",
     data: mData,
     getPolygon : d => d.geometry.coordinates[0][0],
     getLineColor: [255, 255, 255],
-    getFillColor: d => d.properties.fillColor,
+    getFillColor: d => [255, Math.random() * 255 , 50, 120],
     getLineWidth: 20,
     lineWidthMinPixels: 1,
     pickable: true
-
   });
 
   useEffect(() => {
@@ -35,7 +46,7 @@ export default function IndexMap() {
   }, []);
 
   return (
-    <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={[layer]}>
+    <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={[Regionlayer, DistrictLayer]}>
       <div className="map-controls">
         <button className="map-control-btn">Filters</button>
         <button className="map-control-btn">Pollutants</button>
