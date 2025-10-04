@@ -1,0 +1,21 @@
+:root {
+    --var-unselected: #4A4A4A;
+    --var-col1: #F5E027;
+    --var-col2: #24A3D4;   
+}
+
+ 
+.filter-selection-list{
+    height: 100%;
+    min-height: 20vh;
+    width: 80%;
+    display: grid;
+    grid-template-columns: 40% 40%;
+    overflow-y: scroll;
+    gap: 10%;
+}
+label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
