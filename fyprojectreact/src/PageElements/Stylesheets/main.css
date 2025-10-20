@@ -11,9 +11,15 @@ h1{
     position: relative;
     z-index: 10;
 }
+.map-controls-div{
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    width: fit-content;
+    min-width: 10vw;
+}
 
 .map-controls{
-    position: absolute;
     width: fit-content;
     min-width: 8vw;
     height: 30vh;
@@ -26,8 +32,43 @@ h1{
 }
 .map-control-btn{
     background: none;
+    width: 100%;
+    height: fit-content;
+    border-radius: 10px;
     border: none;
-    font-size: 3.5vmin;
+    font-size: 2.5vmin;
     color: white;
     cursor: pointer;
+    transition: 0.2s ease-in;
+}
+.map-control-btn.active{
+    background-color: #303030;
+}
+.filter-title{
+    color: white;
+    font-size: 4vmin;
+}
+
+ 
+.filters-content{
+    position: relative;
+    border-radius: 5px;
+    width: fit-content;
+    right: 10px;
+    min-width: 28vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #30303098;
+    color: white;
+    height: fit-content;
+    min-height: 25vh;
+    margin-top: 20%;
+    transition: 0.50s ease-in;
+    opacity: 0%;
+    box-sizing: border-box;
+}
+.filters-content.active{
+    opacity: 100%;
+    right: 0px;
 }
