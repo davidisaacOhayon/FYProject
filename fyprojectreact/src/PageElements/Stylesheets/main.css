@@ -55,7 +55,7 @@ h1{
     border-radius: 5px;
     width: fit-content;
     right: 10px;
-    min-width: 25vw;
+    min-width: 28vw;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -66,6 +66,7 @@ h1{
     margin-top: 20%;
     transition: 0.50s ease-in;
     opacity: 0%;
+    box-sizing: border-box;
 }
 .filters-content.active{
     opacity: 100%;

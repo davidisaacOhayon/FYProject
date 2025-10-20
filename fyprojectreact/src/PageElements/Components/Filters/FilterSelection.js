@@ -2,26 +2,35 @@ import {react, useState, useEffect} from 'react';
 
 import '../../Stylesheets/filters.css'
 
-export default function FilterSelection(data, setData){
+export default function FilterssSelection({data, setData}){
 
 
-    // This is usually contains the sets stored within data.
-    const dataElements =  data['data'];
+    const changeData = (id) => {
 
+        const key = Object.keys(data)[id];
+
+        setData(prev => ({
+            ...prev, [key] : {...prev[key], flag: !data[key].flag}
+        }))
+    }
+
+    useEffect(() => {
+        Object.entries(data).map((el, index) =>{
+            console.log(el);
+        })
+
+    },[data])
 
     return(
         <>
- 
             <ul className={"filter-selection-list"}>
-                   
-                    {dataElements.map((element, index) => 
-                        <label>{element['name']}
-                            <input name={element['name']} type={"checkbox"} value={element['name']}/>
+                    {Object.values(data).map((element, index) => 
+                        <label>{element["name"]}
+                            <input onChange={() => {changeData(index)}} name={element['name']} type={"checkbox"} value={element['name']}/>
                         </label>
 
                     )}
             </ul>
- 
         </>
     )
 }
