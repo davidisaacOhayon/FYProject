@@ -11,6 +11,13 @@ import FilterSelection from './Components/Filters/FilterSelection';
 export default function IndexMap() {
  
 
+
+  useEffect(() => {
+    // Instantiate layers
+    setMapLayers([mapLayers, PollutionRegionlayer, SelectedRegionLayer]);
+  },[])
+  
+
   // Holds the map layers of Deck.GL. 
   const [mapLayers, setMapLayers] = useState([])
 
@@ -31,6 +38,13 @@ export default function IndexMap() {
      "Pneu" : { name: "Pneumonia", flag : false, col : "#F5E027"}
   })
 
+
+  // Current town being hovered
+  const [hoveredTown, setHovered] = useState(null);
+
+  const [townIsHovered, setIsHovered]= useState(false);
+
+  const [layers, setLayers] = useState([]);
 
   // Disease Filter reference
   const diseaseFilter = useRef(null);
@@ -130,8 +144,21 @@ export default function IndexMap() {
     return () => document.removeEventListener('click', clickEvent)
   }, [])
 
+  // useEffect(() =>{
+  //   if (townIsHovered){
+  //     layers.push(SelectedRegionLayer)
+  //   }else{
+  //     if (layers.contains(SelectedRegionLayer)){
+  //       layers
+  //     }
+  //   }
+  // }, [PollutionRegionlayer, hoveredTown])
 
   ////////// LAYER VARIABLES & FUNCTIONS
+
+
+
+
   const EnablePollutionLayer = () => {  
     if(!mapLayers.includes(PollutionRegionlayer)){
         mapLayers.push(PollutionRegionlayer);
@@ -151,21 +178,56 @@ export default function IndexMap() {
 
   });
 
+
+  let SelectedRegionLayer = new PolygonLayer({
+    id: "SelectedPolygonLayer",
+    data: hoveredTown,
+    getPolygon: d => d,
+    getLineColor: [255, 255 ,255],
+    getFillColor: [255, 0, 0],
+    getLineWidth: 20,
+    lineWidthMinPixels: 1,
+  })
+
   // Polygon layer to display all Maltese districts
   const PollutionRegionlayer = new PolygonLayer({
     id: "PolygonLayer",
     data: mData,
     getPolygon : d => d.geometry.coordinates[0][0],
-    getLineColor: [255, 255, 255],
+    getLineColor:[255, 255, 255],
     // getFillColor: d => [255, Math.random() * 255 , 50, 120],
+    // getFillColor:
     getLineWidth: 20,
     lineWidthMinPixels: 1,
+    onHover: (info, event) => {
+      if (info.object){
+        // console.log(info.index + info.object.properties.locality_n)
+        setHovered(info.object.geometry.coordinates[0])
+      }else{
+        return; 
+      } 
+    },
     pickable: true
-  });
+  }); 
+
+
+  useEffect(() => {
+    if(!hoveredTown){
+      return;
+    }
+    console.log(hoveredTown)
+    // Re-make SelectedRegionLayer
+    SelectedRegionLayer = SelectedRegionLayer.clone({
+      data: hoveredTown
+    })
+
+    setMapLayers([PollutionRegionlayer, SelectedRegionLayer])
+    
+  }, [hoveredTown])
 
 
   return (
-    <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={[PollutionRegionlayer]}>
+    <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={mapLayers}>
       <div className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
