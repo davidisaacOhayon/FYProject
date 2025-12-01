@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
+
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
 import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
@@ -37,7 +38,6 @@ export default function IndexMap() {
      "LungC" :{ name: "Lung Cancer", flag : false, col : "#F5E027"},
      "Pneu" : { name: "Pneumonia", flag : false, col : "#F5E027"}
   })
-
 
   // Current town being hovered
   const [hoveredTown, setHovered] = useState(null);
@@ -83,6 +83,7 @@ export default function IndexMap() {
     
   }
 
+  // Adjust filters and prepare request URLS
   useEffect(() => {
     if (!pollutants){
       return;
@@ -184,8 +185,8 @@ export default function IndexMap() {
     data: hoveredTown,
     getPolygon: d => d,
     getLineColor: [255, 255 ,255],
-    getFillColor: [255, 0, 0],
-    getLineWidth: 20,
+    getFillColor: [179, 2, 64],
+    getLineWidth: 10,
     lineWidthMinPixels: 1,
   })
 
@@ -197,7 +198,7 @@ export default function IndexMap() {
     getLineColor:[255, 255, 255],
     // getFillColor: d => [255, Math.random() * 255 , 50, 120],
     // getFillColor:
-    getLineWidth: 20,
+    getLineWidth: 10,
     lineWidthMinPixels: 1,
     onHover: (info, event) => {
       if (info.object){
@@ -209,7 +210,6 @@ export default function IndexMap() {
     },
     pickable: true
   }); 
-
 
   useEffect(() => {
     if(!hoveredTown){

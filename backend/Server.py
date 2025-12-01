@@ -87,9 +87,26 @@ async def test_getTown(id: int, session:SessionDep):
         return {"Erorr" : "Trouble retrieving pollutant data"}
     return pollutant
 
-@app.get("/getPollutantVolTown/{town}")
-async def pollutant_endpoint_town(town: str, session: SessionDep):
-    result = select(Pollutants).where(Pollutants.town == town)
+@app.get("/getPollutantVol/")
+async def pollutant_endpoint(session: SessionDep, start_date: date = None, end_date: date = date.now().replace(day=1)):
+    result = select(Pollutants).filter(Pollutants.day >= start_date)
+
+    if end_date:
+        results = results.filter(Pollutants.day <= end_date)
+
+    if not result:
+        return {"Error" : "No results found."}
+    return result
+
+
+@app.get("/getPollutantVolTown/")
+async def pollutant_endpoint_town(town: str, session: SessionDep, start_date: date = date.now(), end_date: date = date.now().replace(day=1)):
+
+    result = select(Pollutants).where(Pollutants.town == town).filter(Pollutants.day >= start_date)
+
+    if end_date:
+        result = result.filter(Pollutants.day <= end_date)
+
     if not result:
         return {"Error" : "No results found"}
     return result
