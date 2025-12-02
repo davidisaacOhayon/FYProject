@@ -6,9 +6,16 @@
     background-color: #303030;
     box-sizing: content-box;
     padding: 10px;
-    width: 10vw;
+    width: 20vw;
+    height: auto;
+    min-height: 20vh;
     /* resize: both;
     overflow: auto; */
     display: flex;
     flex-direction: column;
+    box-shadow: 0px 0px 0px 2px rgb(121, 121, 121);
+    border-radius: 5px;
+}
+.town-overview hr {
+    width: 100%;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+  import { useEffect, useState, useRef } from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
@@ -25,12 +25,12 @@ export default function IndexMap() {
 
   // Contains info of all pollutants we will monitor
   const [pollutants, setPollutants] = useState({
-    "sO2" : { name: "Sulfur Dioxide (SO2)", flag : false, col : "#F5E027"},
-    "nO" : { name: "Nitric Oxide (nO)", flag : false, col : "#24A3D4"},
-    "pM2" : { name: "PM2", flag : false, col : "#24A3D4"},
-    "pM10" : { name: "PM10", flag : false, col : "#24A3D4"},
-    "nO2" :{ name: "Nitrogen Dioxide (nO2)", flag : false, col : "#24A3D4"},
-    "o3" : { name: "Ozone (O3)", flag : false, col : "#24A3D4"}
+    "sO2" : { name: "Sulfur Dioxide - SO2", flag : false, col : "#F5E027"},
+    "nO" : { name: "Nitric Oxide - NO", flag : false, col : "#24A3D4"},
+    "pM2" : { name: "PM 2.5", flag : false, col : "#24A3D4"},
+    "pM10" : { name: "PM 10", flag : false, col : "#24A3D4"},
+    "nO2" :{ name: "Nitrogen Dioxide - NO2", flag : false, col : "#24A3D4"},
+    "o3" : { name: "Ozone - O3", flag : false, col : "#24A3D4"}
     })
 
   // Contains info of all diseases we will monitor.
@@ -51,7 +51,11 @@ export default function IndexMap() {
   // Pollutant Filter reference
   const pollutantFilter = useRef(null);
 
+  // Filter Box reference
   const filterBox = useRef(null);
+
+  // Filter Options reference 
+  const filterOptions = useRef(null);
 
   // Keeps track of selected filters
   const [selectedFilter, setFilter] = useState(null);
@@ -130,26 +134,26 @@ export default function IndexMap() {
   // Assign event listener
 
   
-  useEffect(() => {
+ 
     // Event listener for filter box on click off click
-    const clickEvent = (e) => {
-        console.log('click detected!')
-        console.log(selectedFilter)
-        if (selectedFilter != null) {
-          console.log('a selected filter is here')
-          if(filterBox.current && !filterBox.current.contains(e.target)){
-            console.log('Im seeing nothing that is a child of the filter box')
-            setFilter(null);
-          }
-        }else{
-          console.log('a selected filter isnt here it seems')
-        }
-       
-    }  
-    document.addEventListener('click', clickEvent)
+  const clickEvent = (e) => {
+      
+      // Check if click is inside filter box options (ignore)
+      if(e.target == filterOptions.current || filterOptions.current.contains(e.target)){
+        return;
+      }
 
-    return () => document.removeEventListener('click', clickEvent)
-  }, [])
+      if (selectedFilter != null) {
+ 
+        if(filterBox.current && !filterBox.current.contains(e.target)){
+ 
+          setFilter(null);
+        }
+      } 
+    
+  }  
+  document.addEventListener('click', clickEvent)
+ 
 
 
 
@@ -234,7 +238,7 @@ export default function IndexMap() {
     if(!hoveredTown){
       return;
     }
-    console.log(hoveredTown)
+ 
     // Re-make SelectedRegionLayer
     SelectedRegionLayer = SelectedRegionLayer.clone({
       data: hoveredTown
@@ -249,7 +253,7 @@ export default function IndexMap() {
 
   return (
     <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={mapLayers}>
-      <div className={"map-controls-div"}>
+      <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>

@@ -10,13 +10,17 @@ import '../Stylesheets/townoverview.css';
 export default function TownOverview({args}){
 
 
-    const [town, setTown] = useState(null);
+    const [pollutantReadings, setPollutants] = useState(null);
     // Process pollutant data for risk analysis on potential diseases
     useEffect(() => {
         // Logic
 
+
+
         // Retrieve town pollution data of previous month.
-        
+        axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
+        .then(res => setPollutants(res.data))
+        .catch(err => console.log(err.data.response))
 
         // Go over latest mean reading of pollutant concentrations
         // Compare readings with conventional tolerant limits
@@ -35,7 +39,7 @@ export default function TownOverview({args}){
         <>
             <div className={'town-overview'} style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
                 <h2>{args.townName}</h2>
-                <br/>
+                <hr/>
                 <div className={'town-overview-details'}>
 
                 </div>
