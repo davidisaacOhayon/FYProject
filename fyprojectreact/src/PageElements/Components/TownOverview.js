@@ -5,7 +5,9 @@
 
 import { useEffect, useState } from "react"
 
-export default function TownOverview({townReading}){
+import '../Stylesheets/townoverview.css';
+
+export default function TownOverview({args}){
 
 
     const [town, setTown] = useState(null);
@@ -24,11 +26,15 @@ export default function TownOverview({townReading}){
 
     },[])
 
+    if( args == null){
+        return
+    }
+
 
     return(
         <>
-            <div className={'town-overview'}>
-                <h2>{townReading.townName}</h2>
+            <div className={'town-overview'} style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
+                <h2>{args.townName}</h2>
                 <br/>
                 <div className={'town-overview-details'}>
 

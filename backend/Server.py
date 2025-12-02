@@ -88,7 +88,7 @@ async def test_getTown(id: int, session:SessionDep):
     return pollutant
 
 @app.get("/getPollutantVol/")
-async def pollutant_endpoint(session: SessionDep, start_date: date = None, end_date: date = date.now().replace(day=1)):
+async def pollutant_endpoint(session: SessionDep,end_date: date , start_date: date = None ):
     result = select(Pollutants).filter(Pollutants.day >= start_date)
 
     if end_date:
@@ -100,7 +100,7 @@ async def pollutant_endpoint(session: SessionDep, start_date: date = None, end_d
 
 
 @app.get("/getPollutantVolTown/")
-async def pollutant_endpoint_town(town: str, session: SessionDep, start_date: date = date.now(), end_date: date = date.now().replace(day=1)):
+async def pollutant_endpoint_town(town: str, session: SessionDep, end_date: date ,start_date: date ):
 
     result = select(Pollutants).where(Pollutants.town == town).filter(Pollutants.day >= start_date)
 

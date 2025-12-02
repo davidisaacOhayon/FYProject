@@ -8,6 +8,7 @@ import './Stylesheets/main.css';
 import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
 import tData from './Datasets/MaltaDistricts.Json';
 import FilterSelection from './Components/Filters/FilterSelection';
+import TownOverview from './Components/TownOverview';
 
 export default function IndexMap() {
  
@@ -42,9 +43,8 @@ export default function IndexMap() {
   // Current town being hovered
   const [hoveredTown, setHovered] = useState(null);
 
-  const [townIsHovered, setIsHovered]= useState(false);
-
-  const [layers, setLayers] = useState([]);
+  // Overlay Arguments for town detail upon mouse click for town
+  const [overlayArgs, setOverlayArgs] = useState(null);
 
   // Disease Filter reference
   const diseaseFilter = useRef(null);
@@ -77,11 +77,7 @@ export default function IndexMap() {
 
 
   //////// LOGIC FUNCTIONS
-  // Function for setting filter.
-  const selectFilter = (filter) => {
-    setFilter(filter);
-    
-  }
+ 
 
   // Adjust filters and prepare request URLS
   useEffect(() => {
@@ -90,7 +86,7 @@ export default function IndexMap() {
     }
 
     switch (selectedFilter) {
-      case pollutantFilter: {
+      case 'pollutantFilter': {
         
         setFilterReqBody(
         {
@@ -105,7 +101,7 @@ export default function IndexMap() {
         setReqUrl("/getPollutantVol/")
         break;}
 
-      case diseaseFilter: {setFilterReqBody(diseases) 
+      case 'diseaseFilter': {setFilterReqBody(diseases) 
         setReqUrl("/getDiseaseVol")
         break;}
 
@@ -119,31 +115,43 @@ export default function IndexMap() {
   // Once user selects filter, execute post request
   useEffect(() => {
 
-    console.log(`Pollutant changes:`)
     if(reqURL && filterReqBody){
         axios.post(`http://localhost:8000${reqURL}`, filterReqBody)
         .then(res => console.log(res.data))
     }
 
-  }, [selectFilter])
+  }, [selectedFilter])
+
 
 
 
   //////// EVENT LISTENERS 
 
   // Assign event listener
+
+  
   useEffect(() => {
-      const clickEvent = (e) => {
-        if (selectedFilter) {
+    // Event listener for filter box on click off click
+    const clickEvent = (e) => {
+        console.log('click detected!')
+        console.log(selectedFilter)
+        if (selectedFilter != null) {
+          console.log('a selected filter is here')
           if(filterBox.current && !filterBox.current.contains(e.target)){
+            console.log('Im seeing nothing that is a child of the filter box')
             setFilter(null);
           }
+        }else{
+          console.log('a selected filter isnt here it seems')
         }
-      }  
+       
+    }  
     document.addEventListener('click', clickEvent)
 
     return () => document.removeEventListener('click', clickEvent)
   }, [])
+
+
 
   // useEffect(() =>{
   //   if (townIsHovered){
@@ -157,7 +165,9 @@ export default function IndexMap() {
 
   ////////// LAYER VARIABLES & FUNCTIONS
 
-
+  useEffect(()=> {
+    console.log(`Stuff changed ${overlayArgs}`)
+  }, [overlayArgs])
 
 
   const EnablePollutionLayer = () => {  
@@ -190,7 +200,7 @@ export default function IndexMap() {
     lineWidthMinPixels: 1,
   })
 
-  // Polygon layer to display all Maltese districts
+  // Polygon layer to overlay all Maltese town
   const PollutionRegionlayer = new PolygonLayer({
     id: "PolygonLayer",
     data: mData,
@@ -200,9 +210,18 @@ export default function IndexMap() {
     // getFillColor:
     getLineWidth: 10,
     lineWidthMinPixels: 1,
+
+    onClick: (info, event) => {
+      if (info.object){
+        setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)})
+      }
+    },
+
     onHover: (info, event) => {
+      // If object info exists
       if (info.object){
         // console.log(info.index + info.object.properties.locality_n)
+        // Highlight town
         setHovered(info.object.geometry.coordinates[0])
       }else{
         return; 
@@ -224,6 +243,8 @@ export default function IndexMap() {
     setMapLayers([PollutionRegionlayer, SelectedRegionLayer])
     
   }, [hoveredTown])
+ 
+
 
 
   return (
@@ -231,19 +252,20 @@ export default function IndexMap() {
       <div className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
-          <button  onClick={(e) => selectFilter(pollutantFilter)} className={selectedFilter == pollutantFilter ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
-          <button onClick={(e) => selectFilter(diseaseFilter)} className={selectedFilter == diseaseFilter ? "map-control-btn active" : "map-control-btn"}>Diseases</button>
+          <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
+          <button onClick={() => setFilter('diseaseFilter')} className={selectedFilter == 'diseaseFilter' ? "map-control-btn active" : "map-control-btn"}>Diseases</button>
           <button className="map-control-btn">Stats Monitor</button>
           <button className="map-control-btn">Borders</button>
         </div>
 
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
-          {selectedFilter == pollutantFilter ? <FilterSelection data={pollutants} setData={setPollutants} /> : null}
-          {selectedFilter == diseaseFilter ? <FilterSelection data={diseases} setData={setDiseases} /> : null}
+          {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
+          {selectedFilter == 'diseaseFilter' ? <FilterSelection useRef={diseaseFilter} data={diseases} setData={setDiseases} /> : null}
         </div>
       </div>
 
-
+       <TownOverview args={overlayArgs}/>
+      
       <Map
         id="MainMap"
         mapStyle="mapbox://styles/ohayorino/cmet1zrt8002r01sc8rfq2fw2"
