@@ -1,20 +1,52 @@
 
-
+:root{
+    --varPolBtn: #1f1f1f;
+}
 
 .town-overview{
     color: white;
     background-color: #303030;
     box-sizing: content-box;
     padding: 10px;
-    width: 20vw;
+    width: 25vw;
     height: auto;
-    min-height: 20vh;
+    min-height: 30vh;
     /* resize: both;
     overflow: auto; */
     display: flex;
     flex-direction: column;
     box-shadow: 0px 0px 0px 2px rgb(121, 121, 121);
     border-radius: 5px;
+    animation: overview-intro 0.2s ease-in forwards;
+    opacity: 0;
+    pointer-events: auto;
+    z-index: 1000;
+}
+.town-overview-details{
+    width: 100%;
+    height: 50%;
+    background-color: rgb(42, 42, 42);
+    color: white;
+}
+.pollutant-filters{
+    display: flex;
+    list-style: none;
+    width: 90%;
+    height: auto;
+}
+.pol-btn button{
+    background-color: var(--varPolBtn);
+    color: white;
+    border-radius: 0;
+    text-decoration: none;
+}
+@keyframes overview-intro {
+    0%{
+        opacity:0;
+    }
+    100%{
+        opacity:1;
+    }
 }
 .town-overview hr {
     width: 100%;

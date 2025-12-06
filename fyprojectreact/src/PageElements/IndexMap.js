@@ -1,4 +1,4 @@
-  import { useEffect, useState, useRef } from 'react';
+  import { useEffect, useState, useRef, useCallback} from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
@@ -48,14 +48,23 @@ export default function IndexMap() {
 
   // Disease Filter reference
   const diseaseFilter = useRef(null);
+
+  // Main Deck Component ref
+  const deckRef = useRef();
+
   // Pollutant Filter reference
   const pollutantFilter = useRef(null);
 
   // Filter Box reference
   const filterBox = useRef(null);
 
+  // Town Overlay reference
+  const overlay = useRef();
+
   // Filter Options reference 
-  const filterOptions = useRef(null);
+  const filterOptions = useRef();
+  
+
 
   // Keeps track of selected filters
   const [selectedFilter, setFilter] = useState(null);
@@ -123,20 +132,33 @@ export default function IndexMap() {
         axios.post(`http://localhost:8000${reqURL}`, filterReqBody)
         .then(res => console.log(res.data))
     }
-
+    
   }, [selectedFilter])
 
 
 
 
   //////// EVENT LISTENERS 
-
-  // Assign event listener
-
-  
  
-    // Event listener for filter box on click off click
-  const clickEvent = (e) => {
+  const clickEventOverlay = useCallback((e) => {
+  console.log("lol")
+    
+    if (overlayArgs != null){ 
+      console.log("lol")
+
+      if (!(e.target == overlay.current) || !overlay.current.contains(e.target)){
+        console.log("setting false")
+        setOverlayArgs(null)
+      }
+
+    }
+   }, [overlayArgs])
+
+  // Event listener for filter box on click off click
+  const clickEventFilter = useCallback((e) => {
+      if (filterOptions.current == null){
+        return;
+      }
       
       // Check if click is inside filter box options (ignore)
       if(e.target == filterOptions.current || filterOptions.current.contains(e.target)){
@@ -148,30 +170,48 @@ export default function IndexMap() {
         if(filterBox.current && !filterBox.current.contains(e.target)){
  
           setFilter(null);
+
         }
       } 
     
-  }  
-  document.addEventListener('click', clickEvent)
- 
+  }, [selectedFilter] )
 
 
 
-  // useEffect(() =>{
-  //   if (townIsHovered){
-  //     layers.push(SelectedRegionLayer)
-  //   }else{
-  //     if (layers.contains(SelectedRegionLayer)){
-  //       layers
-  //     }
-  //   }
-  // }, [PollutionRegionlayer, hoveredTown])
+  // Event Listener Initializer
+  useEffect(() => {
+
+
+    document.addEventListener('click', clickEventFilter)
+    // document.addEventListener('click', clickEventOverlay)
+
+    return () => {
+        document.removeEventListener('click', clickEventFilter);
+        // document.removeEventListener('click', clickEventOverlay);
+    }
+
+  }, [clickEventFilter, clickEventOverlay])
+
+
+
 
   ////////// LAYER VARIABLES & FUNCTIONS
 
-  useEffect(()=> {
-    console.log(`Stuff changed ${overlayArgs}`)
-  }, [overlayArgs])
+  // Use Effect to re-render polygons with highlighted red if we are hovering over a town
+  useEffect(() => {
+    if(!hoveredTown){
+      setMapLayers([PollutionRegionlayer]);
+      return;
+    }
+ 
+    // Re-make SelectedRegionLayer
+    SelectedRegionLayer = SelectedRegionLayer.clone({
+      data: hoveredTown
+    })
+
+    setMapLayers([PollutionRegionlayer, SelectedRegionLayer])
+    
+  }, [hoveredTown])
 
 
   const EnablePollutionLayer = () => {  
@@ -182,7 +222,7 @@ export default function IndexMap() {
     }
   }
 
-    // Text layers to display all Maltese district names
+  // Text layers to display all Maltese district names
   const DistrictLayer = new TextLayer({
     id: 'TextLayer',
     data: tData,
@@ -217,13 +257,29 @@ export default function IndexMap() {
 
     onClick: (info, event) => {
       if (info.object){
+        // If overlay is open, check if click is within overlay bounds
+        if (overlayArgs && overlay.current) {
+          // Get overlay coordinates
+          const rect = overlay.current.getBoundingClientRect();
+          // Get click coordinates
+          const clickX = info.x;
+          const clickY = info.y;
+          
+          // If click is inside overlay, ignore polygon click
+          if (clickX >= rect.left && clickX <= rect.right && 
+              clickY >= rect.top && clickY <= rect.bottom) {
+            return;
+          }
+        }
+        
+        // Set town overlay args with name, and viewport coordinates
         setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)})
       }
     },
 
     onHover: (info, event) => {
       // If object info exists
-      if (info.object){
+      if (info.object && !overlayArgs){
         // console.log(info.index + info.object.properties.locality_n)
         // Highlight town
         setHovered(info.object.geometry.coordinates[0])
@@ -234,25 +290,10 @@ export default function IndexMap() {
     pickable: true
   }); 
 
-  useEffect(() => {
-    if(!hoveredTown){
-      return;
-    }
- 
-    // Re-make SelectedRegionLayer
-    SelectedRegionLayer = SelectedRegionLayer.clone({
-      data: hoveredTown
-    })
-
-    setMapLayers([PollutionRegionlayer, SelectedRegionLayer])
-    
-  }, [hoveredTown])
- 
-
 
 
   return (
-    <DeckGL initialViewState={INITIAL_MAP_STATE} controller={true} layers={mapLayers}>
+    <DeckGL controller={"true"} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
@@ -261,14 +302,13 @@ export default function IndexMap() {
           <button className="map-control-btn">Stats Monitor</button>
           <button className="map-control-btn">Borders</button>
         </div>
-
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
           {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
           {selectedFilter == 'diseaseFilter' ? <FilterSelection useRef={diseaseFilter} data={diseases} setData={setDiseases} /> : null}
         </div>
       </div>
 
-       <TownOverview args={overlayArgs}/>
+      {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs}/> : null}
       
       <Map
         id="MainMap"

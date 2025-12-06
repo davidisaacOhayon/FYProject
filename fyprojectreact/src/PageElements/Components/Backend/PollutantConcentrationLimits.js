@@ -10,8 +10,15 @@ export const pollutantLimitsYearly = {
     "CO2" : 4,
     "O3": 60
 }
-
-
+// Keywords for pollutants
+export const listofPollutants = [
+    "SO2",
+    "NO2",
+    "PM10",
+    "PM25",
+    "CO2",
+    "NO"
+]
 export const pollutantLimits24Hr = {
     "SO2" : 40,
     "NO2" : 25,

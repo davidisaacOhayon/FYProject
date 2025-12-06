@@ -67,13 +67,14 @@ app = FastAPI(lifespan=lifespan)
  
 # Defined origins for CORS
 origins = [
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "*"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    # allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -88,11 +89,11 @@ async def test_getTown(id: int, session:SessionDep):
     return pollutant
 
 @app.get("/getPollutantVol/")
-async def pollutant_endpoint(session: SessionDep,end_date: date , start_date: date = None ):
+async def pollutant_endpoint(session: SessionDep, end_date: date, start_date: date = None ):
     result = select(Pollutants).filter(Pollutants.day >= start_date)
 
     if end_date:
-        results = results.filter(Pollutants.day <= end_date)
+        results = result.filter(Pollutants.day <= end_date)
 
     if not result:
         return {"Error" : "No results found."}
@@ -100,16 +101,19 @@ async def pollutant_endpoint(session: SessionDep,end_date: date , start_date: da
 
 
 @app.get("/getPollutantVolTown/")
-async def pollutant_endpoint_town(town: str, session: SessionDep, end_date: date ,start_date: date ):
+async def pollutant_endpoint_town(town: str, session: SessionDep, end_date: date = None,start_date: date = None):
 
-    result = select(Pollutants).where(Pollutants.town == town).filter(Pollutants.day >= start_date)
-
+    query = select(Pollutants).where(Pollutants.town == town)
+     
     if end_date:
-        result = result.filter(Pollutants.day <= end_date)
+        query = query.where(Pollutants.day <= end_date)
 
-    if not result:
-        return {"Error" : "No results found"}
-    return result
+    if start_date:
+        query = query.where(Pollutants.day >= start_date)
+
+
+    rows = session.exec(query).all()
+    return rows
 
 @app.post("/getPollutants")
 async def pollutant_endpoint(query: PollutantFilterParams, session: SessionDep):
