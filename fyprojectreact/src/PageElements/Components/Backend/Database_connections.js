@@ -3,14 +3,16 @@ import axios from 'axios'
 
 
 
-export function getTownPollution(town){
-    let response; 
+export async function getTownPollution(town){
 
-    axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
-    .then(res => {
-        response = res.data})
-    .catch(err => {})
+    try {
+        const res =  axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
+        return res.data;
+    }catch (err){
+        return null;
+    }
 
-    return response;
-    
+ 
+
+
 }

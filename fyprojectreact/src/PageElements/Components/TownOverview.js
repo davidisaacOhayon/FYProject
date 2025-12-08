@@ -6,29 +6,50 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { getTownPollution } from "./Backend/Database_connections";
-import { LineChart } from '@mui/x-charts';
+
+
 
 
 import '../Stylesheets/townoverview.css';
 import Button from "@mui/material/Button";
+import Box from '@mui/material/Box';
+import { LineChart } from '@mui/x-charts';
 
 export default function TownOverview({args, overlayRef}){
 
-
-
+    // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
- 
+    
+    // Contains applied pollutants for filtering
+    const [pollutantFilter, setPollutantFilter] = useState([]);
+    
+    // List down each pollutant key
+    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
 
+    // Display Data for graph visuals
+    const [displayData, setDisplayData] = useState(null);
+
+    const pollutantColors = {
+        'SO2': "#f5d142",
+        'NO' : "#b8c916",
+        'NO2': "#1652c9",
+        'PM25': "#c92e16",
+        'PM10': '#96000d'
+    }
     // Process pollutant data for risk analysis on potential diseases
     useEffect(() => {
         if( args.townName == null){
             return
         }
 
+                
         // Retrieve pollutant info on town
-        const data = getTownPollution(args.townName)
-
-        setPollutants(data)
+        axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
+        .then(res => {setPollutants(res.data) 
+            console.log(res.data)}) 
+        .catch(err => console.log(err.res.data))
+        
+        loadPollutantsDataset();
         
         // Retrieve town pollution data of previous month.
         // Go over latest mean reading of pollutant concentrations
@@ -36,16 +57,60 @@ export default function TownOverview({args, overlayRef}){
         // Correspond any excess concentrations with respective diseases.
         // If there are no excesses, return that town is in a 'healthy' state
 
-    },[])
+    },[args])
 
     const renderFrequencyGraph = () => {
         return null
     }
 
+    const applyPollutant = (pol) => {
+        if (!checkActivePollutant(pol)) {
+            setPollutantFilter(prev => [...prev, pol])
+        }else{
+            setPollutantFilter(prev => [...prev.filter(x => pol !== x)])
+        }
+    }
 
+    const checkActivePollutant = (pol) =>{
+        return pollutantFilter.includes(pol);
+    }
+
+    const retrievePollutionSet = (pol) =>{
+        let polData = [];
+        if (!pollutantReadings){
+            return;
+        }
+        pollutantReadings.map((dataset, index) => {
+            polData.push(dataset[pol]);
+        });
+
+        return {data: polData};
+    }
+
+    const loadPollutantsDataset = () => {
+        console.log("retrieving data")
+        let data = []
+        if (pollutantReadings) {
+            console.log("Mapping pollutants")
+            pollutantFilter.map((pol, index) => {
+                console.log("retrieving pollutant", pol)
+                data.push(retrievePollutionSet(pol))
+            })
+            setDisplayData(data);
+        }else{
+            return;
+        }
+    }
+
+    useEffect(() => {
+        if (displayData !== null){
+            console.log(displayData)
+        }
+    }, [displayData])
 
 
  
+
 
     return(
         <>
@@ -56,38 +121,34 @@ export default function TownOverview({args, overlayRef}){
                 <h2>{args.townName}</h2>
                 <hr/>
                 <ul className={'pollutant-filters'}>
-                    <li className={'pol-btn'}>
-                        <Button>SO2</Button>
-                    </li>
-                    <li className={'pol-btn'}>
-                        <Button>PM2.5</Button>
-                    </li>
-                    <li className={'pol-btn'}>
-                        <Button>PM10</Button>
-                    </li>
-                    <li className={'pol-btn'}>
-                        <Button>NO2</Button>
-                    </li>
-                    <li className={'pol-btn'}>
-                        <Button>NO</Button>
-                    </li>
+                    {pollutants.map((e, index) => 
+                        <li key={index} style={ checkActivePollutant(e) ? {backgroundColor : pollutantColors[e]} : {backgroundColor : "#1f1f1f"}} className={checkActivePollutant(e) ? 'pol-btn active' : 'pol-btn'}>
+                         <Button onClick={() => applyPollutant(e)}>{e}</Button>
+                        </li>
+                    )}
 
                 </ul>
+
                 <div className={'town-overview-details'}>
-                <LineChart
-                    sx={{
-                        '.MuiChartsAxis-line': { stroke: '#d9d9d9ff' },
-                        '.MuiChartsAxis-tick': { stroke: '#fffffff' },
-                        '.MuiChartsAxis-tickLabel': { fill: '#e3e3e3ff' },
-                    }}
+
+                <Box>
+                    <LineChart
                     xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
                     series={[
-                        {
-                        data: [2, 5.5, 2, 8.5, 1.5, 5],
-                        },
-                        ]}
+                        {data : [1,2,3,4,5]},
+                        {data : [1,2,53,4,5]}
+                    ]}
                     height={300}
-                />
+                    sx={{
+                        '.MuiChartsAxis-line': { stroke: '#fff' },       // axis lines white
+                        '.MuiChartsAxis-tick': { stroke: '#fff' },       // tick marks white
+                        '.MuiChartsAxis-tickLabel': { fill: '#fff' },    // tick text white
+                        '.MuiChartsLegend-root': { color: '#fff' },      // legend white
+                        '.MuiChartsTooltip-root': { color: '#000' },     // tooltip text black
+                        '.MuiChartsTooltip-paper': { background: '#fff' } // tooltip background white
+                    }}
+                    />
+                </Box>
                 </div>
             </div>
         </>
