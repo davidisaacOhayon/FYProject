@@ -19,6 +19,15 @@ export const listofPollutants = [
     "CO2",
     "NO"
 ]
+
+export const pollutantDBKeyMap = {
+    "SO2" : "so2_ugm3",
+    "NO2" : "no2_ugm3",
+    "PM10" : "pm10_ugm3",
+    "PM2.5" : "pm25_ugm3",
+    "NO": "no_ugm3",
+    "O" : "o_ugm3"
+}
 export const pollutantLimits24Hr = {
     "SO2" : 40,
     "NO2" : 25,

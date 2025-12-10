@@ -103,7 +103,7 @@ async def pollutant_endpoint(session: SessionDep, end_date: date, start_date: da
 @app.get("/getPollutantVolTown/")
 async def pollutant_endpoint_town(town: str, session: SessionDep, end_date: date = None,start_date: date = None):
 
-    query = select(Pollutants).where(Pollutants.town == town)
+    query = select(Pollutants).where(Pollutants.town == town).order_by(Pollutants.day.desc())
      
     if end_date:
         query = query.where(Pollutants.day <= end_date)

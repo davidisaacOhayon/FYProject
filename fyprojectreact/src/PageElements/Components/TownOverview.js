@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { getTownPollution } from "./Backend/Database_connections";
-
+import { pollutantDBKeyMap } from "./Backend/PollutantConcentrationLimits";
 
 
 
@@ -26,8 +26,11 @@ export default function TownOverview({args, overlayRef}){
     // List down each pollutant key
     const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
 
-    // Display Data for graph visuals
+    // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
+
+    // Retains all possible years of data collected
+    const [yearData, setYearData] = useState(null);
 
     const pollutantColors = {
         'SO2': "#f5d142",
@@ -46,7 +49,7 @@ export default function TownOverview({args, overlayRef}){
         // Retrieve pollutant info on town
         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {setPollutants(res.data) 
-            console.log(res.data)}) 
+            console.log(`Data retrieved ${res.data}`)}) 
         .catch(err => console.log(err.res.data))
         
         loadPollutantsDataset();
@@ -77,10 +80,14 @@ export default function TownOverview({args, overlayRef}){
 
     const retrievePollutionSet = (pol) =>{
         let polData = [];
+        // console.log(`At RetrievePollution with ${pol}`)
         if (!pollutantReadings){
+            // console.log(`At RetrievePollution return`)
             return;
         }
         pollutantReadings.map((dataset, index) => {
+            // console.log(`At RetrievePollution mapper of ${pol}, dataset reading ${Object.values(dataset['SO2'])}`)
+            // console.log(`At RetrievePollution mapper of ${pol}, retrieved ${dataset[pol]}`)
             polData.push(dataset[pol]);
         });
 
@@ -90,21 +97,36 @@ export default function TownOverview({args, overlayRef}){
     const loadPollutantsDataset = () => {
         console.log("retrieving data")
         let data = []
+        let dateData = []
         if (pollutantReadings) {
             console.log("Mapping pollutants")
             pollutantFilter.map((pol, index) => {
+                
                 console.log("retrieving pollutant", pol)
-                data.push(retrievePollutionSet(pol))
+                data.push(retrievePollutionSet(pollutantDBKeyMap[pol]))
             })
             setDisplayData(data);
+
+            pollutantReadings.map((set, index) => {
+                console.log(`Retrieved date ${set['day']}`)
+                let year = parseInt(set['day']);
+    
+                console.log(`retrieved year ${year}`)
+                if (!dateData.includes(year)){
+                    dateData.push(year)
+                }
+            })
+            setYearData(dateData);
         }else{
             return;
         }
     }
 
+ 
     useEffect(() => {
         if (displayData !== null){
             console.log(displayData)
+            console.log(`year data ${yearData}`)
         }
     }, [displayData])
 
@@ -133,11 +155,8 @@ export default function TownOverview({args, overlayRef}){
 
                 <Box>
                     <LineChart
-                    xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                    series={[
-                        {data : [1,2,3,4,5]},
-                        {data : [1,2,53,4,5]}
-                    ]}
+                    xAxis={yearData !== null ? yearData : []}
+                    series={displayData !== null ? displayData : []}
                     height={300}
                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff' },       // axis lines white
