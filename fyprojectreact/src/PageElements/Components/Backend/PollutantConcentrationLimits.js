@@ -20,11 +20,21 @@ export const listofPollutants = [
     "NO"
 ]
 
+ 
+
+export const pollutantNameKeyMap = {
+    "so2_ugm3" : "Sulfur Dioxide",
+    "no2_ugm3" : "Nitrogen Dioxide",
+    "pm10_ugm3" : "Particulate Matter 10",
+    "pm25_ugm3" : "Particulate Matter 2.5",
+    "no_ugm3" : "Nitric Oxide",
+    "o_ugm3" : "Ozone"
+}
 export const pollutantDBKeyMap = {
     "SO2" : "so2_ugm3",
     "NO2" : "no2_ugm3",
     "PM10" : "pm10_ugm3",
-    "PM2.5" : "pm25_ugm3",
+    "PM25" : "pm25_ugm3",
     "NO": "no_ugm3",
     "O" : "o_ugm3"
 }
