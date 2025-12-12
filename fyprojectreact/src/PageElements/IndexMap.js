@@ -63,6 +63,8 @@ export default function IndexMap() {
 
   // Filter Options reference 
   const filterOptions = useRef();
+
+  const [overlayInteracted, setOverlayInterracted] = useState(false);
   
 
 
@@ -293,7 +295,7 @@ export default function IndexMap() {
 
 
   return (
-    <DeckGL controller={"true"} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
+    <DeckGL controller={true} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
@@ -311,6 +313,7 @@ export default function IndexMap() {
       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs}/> : null}
       
       <Map
+        
         id="MainMap"
         mapStyle="mapbox://styles/ohayorino/cmet1zrt8002r01sc8rfq2fw2"
         mapboxAccessToken={MapAccessToken}

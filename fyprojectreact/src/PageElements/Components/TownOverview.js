@@ -3,7 +3,7 @@
 // When a user hovers over a town, we will retrieve the latest pollutant reading
 // to then display it on an overlay box on the town, inplace of the cursor.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { getTownPollution } from "./Backend/Database_connections";
 import { pollutantDBKeyMap, pollutantNameKeyMap } from "./Backend/PollutantConcentrationLimits";
@@ -32,8 +32,15 @@ export default function TownOverview({args, overlayRef}){
     const [yearData, setYearData] = useState(null);
 
 
-    let startX = 0, startY = 0, newX = 0, newY = 0;
 
+    let newX = 0, newY = 0;
+
+    const startX = useRef(0);
+
+    const startY = useRef(0);
+
+    const overlayX = useRef(0);
+    const overlayY = useRef(0);
 
     const pollutantColors = {
         'SO2': "#f5d142",
@@ -129,20 +136,29 @@ export default function TownOverview({args, overlayRef}){
 
 
     const mouseDown = (e) => {
-        startX = e.clientX;
-        startY = e.clientY;
+
+        startX.current = e.clientX;
+        startY.current= e.clientY;
+
+        overlayX.current = overlayRef.current.getBoundingClientRect().left;
+        overlayY.current = overlayRef.current.getBoundingClientRect().top;
 
         document.addEventListener("mousemove", mouseMove);
-        document.addEventListener("mousemove", mouseDown);
+        document.addEventListener("mouseup", mouseUp)
     }
 
-    const mouseMove = (e) => {
-        newX = startX - e.clientX;
-        newY = startY - e.clientY;
+    const mouseMove = useCallback((e) => {
+        const el = overlayRef.current;
 
-        overlayRef.current.style.top = (overlayRef.current.offsetTop - newY) + 'px';
-        overlayRef.current.style.left = (overlayRef.current.offsetLeft - newX) + 'px';
-    }
+        const newX = e.clientX;
+        const newY = e.clientY;
+        
+
+        el.style.left = overlayX.current + (newX - startX.current) + 'px';
+        el.style.top =  overlayY.current + (newY - startY.current) + 'px';
+
+
+    }, [overlayRef])
     
     const mouseUp = (e) => {
         document.removeEventListener('mousemove', mouseMove)
@@ -150,10 +166,26 @@ export default function TownOverview({args, overlayRef}){
 
     useEffect(() => {
 
-        document.addEventListener('mousedown', mouseDown)
 
-        return () => document.removeEventListener('mousedown', mouseDown)
-    })
+        const el = overlayRef.current;
+        if(!el) {return}
+
+        el.addEventListener('mousedown', mouseDown)
+
+        return () => 
+            {
+                el.removeEventListener('mousedown', mouseDown)
+                document.removeEventListener('mousemove', mouseMove)
+                document.removeEventListener('mouseup', mouseUp)
+                startX.current = 0;
+                startY.current = 0;
+                overlayX.current = 0;
+                overlayY.current = 0;
+                newX = 0;
+                newY = 0;
+                
+            }
+    }, [])
  
  
 
