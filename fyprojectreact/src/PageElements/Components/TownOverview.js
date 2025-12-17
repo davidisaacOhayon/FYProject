@@ -13,6 +13,7 @@ import '../Stylesheets/townoverview.css';
 import Button from "@mui/material/Button";
 import Box from '@mui/material/Box';
 import { LineChart } from '@mui/x-charts';
+import { display } from "@mui/system";
 
 export default function TownOverview({args, overlayRef}){
 
@@ -29,16 +30,14 @@ export default function TownOverview({args, overlayRef}){
     const [displayData, setDisplayData] = useState(null);
 
     // Retains all possible years of data collected
-    const [yearData, setYearData] = useState(null);
+    const [dateData, setDateData] = useState(null);
 
 
 
     let newX = 0, newY = 0;
 
     const startX = useRef(0);
-
     const startY = useRef(0);
-
     const overlayX = useRef(0);
     const overlayY = useRef(0);
 
@@ -59,10 +58,15 @@ export default function TownOverview({args, overlayRef}){
         // Retrieve pollutant info on town
         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {setPollutants(res.data) 
-            console.log(`Data retrieved ${res.data}`)}) 
+            console.log(`Data retrieved ${res.data}`)
+             loadRealPollutantSet()
+        }) 
+            
+
         .catch(err => console.log(err.res.data))
         
-        loadPollutantsDataset();
+        // loadPollutantsDataset();
+       
         
         // Retrieve town pollution data of previous month.
         // Go over latest mean reading of pollutant concentrations
@@ -71,10 +75,6 @@ export default function TownOverview({args, overlayRef}){
         // If there are no excesses, return that town is in a 'healthy' state
 
     },[args, pollutantFilter])
-
-    const renderFrequencyGraph = () => {
-        return null
-    }
 
     const applyPollutant = (pol) => {
         if (!checkActivePollutant(pol)) {
@@ -88,57 +88,50 @@ export default function TownOverview({args, overlayRef}){
         return pollutantFilter.includes(pol);
     }
 
-    const retrievePollutionSet = (pol) =>{
-        let polData = [];
-        // console.log(`At RetrievePollution with ${pol}`)
+    const loadRealPollutantSet = () => {
         if (!pollutantReadings){
-            // console.log(`At RetrievePollution return`)
             return;
         }
-        pollutantReadings.map((dataset, index) => {
-            // console.log(`At RetrievePollution mapper of ${pol}, dataset reading ${Object.values(dataset['SO2'])}`)
-            // console.log(`At RetrievePollution mapper of ${pol}, retrieved ${dataset[pol]}`)
-            polData.push(dataset[pol]);
-        });
-
-        return {label: `${pollutantNameKeyMap[pol]}` , data: polData, color: pollutantColors[pol]};
-    }
-
-    const loadPollutantsDataset = () => {
-        console.log("retrieving data")
-        let data = [];
-        let dateData = [];
-
-        if (pollutantReadings) {
-            // console.log("Mapping pollutants")
-            pollutantFilter.map((pol, index) => {
+        let dataset = []
+        let datedataset = []
+        pollutantReadings.map( (set, index) => {
+            let tempSet = {}
+            tempSet["date"] = set['day']
+            pollutantFilter.map( (pol ,indx) => {
                 
-                // console.log("retrieving pollutant", pol)
-                data.push(retrievePollutionSet(pollutantDBKeyMap[pol]))
+                tempSet[pol] = set[pollutantDBKeyMap[pol]];
+                
             })
-            setDisplayData(data);
+            dataset.push(tempSet);
+        })
 
-            pollutantReadings.map((set, index) => {
-                // console.log(`Retrieved date ${set['day']}`)
-                let year = parseInt(set['day']);
-    
-                // console.log(`retrieved year ${year}`)
-                if (!dateData.includes(year)){
-                    dateData.push(year)
-                }
-            })
-            setYearData(dateData);
-        }else{
-            return;
-        }
+        dataset.map(d => {
+            datedataset.push(new Date(d.date));
+        })
+
+        setDateData(datedataset);
+
+        let tempDataSet = []
+        pollutantFilter.map((pol) => {
+            let tempSet = {}
+            tempSet['label'] = pol;
+            tempSet['data'] = dataset.map(d => d[pol] ?? null);
+            tempSet['color'] = pollutantColors[pol];
+            console.log("TEMP SET BEING PUSHED: " + JSON.stringify(tempSet));
+            tempDataSet.push(tempSet);
+        });
+        setDisplayData(tempDataSet);
+
+
+
     }
-
-
 
     const mouseDown = (e) => {
 
+        e.stopPropagation();
         startX.current = e.clientX;
         startY.current= e.clientY;
+
 
         overlayX.current = overlayRef.current.getBoundingClientRect().left;
         overlayY.current = overlayRef.current.getBoundingClientRect().top;
@@ -148,6 +141,7 @@ export default function TownOverview({args, overlayRef}){
     }
 
     const mouseMove = useCallback((e) => {
+        e.stopPropagation();
         const el = overlayRef.current;
 
         const newX = e.clientX;
@@ -187,7 +181,6 @@ export default function TownOverview({args, overlayRef}){
             }
     }, [])
  
- 
 
 
     return(
@@ -211,16 +204,26 @@ export default function TownOverview({args, overlayRef}){
 
                 <Box>
                     <LineChart
-                    xAxis={[ { scaleType: 'band', data : yearData !== null ? yearData : []}]}
-                    series={displayData !== null ? [...displayData] : []}
+                    xAxis={[
+                        {
+                        data: dateData !== null ? dateData : [],
+                        scaleType: 'time',       
+                        }
+                        
+                    ]}
+                    series={[
+                        ...displayData !== null ? displayData.map( d => (
+                            d
+                        )) : []
+                    ]}
                     height={300}
                     sx={{
-                        '.MuiChartsAxis-line': { stroke: '#fff' },       // axis lines white
-                        '.MuiChartsAxis-tick': { stroke: '#fff' },       // tick marks white
-                        '.MuiChartsAxis-tickLabel': { fill: '#fff' },    // tick text white
-                        '.MuiChartsLegend-root': { color: '#fff' },      // legend white
-                        '.MuiChartsTooltip-root': { color: '#000' },     // tooltip text black
-                        '.MuiChartsTooltip-paper': { background: '#fff' } // tooltip background white
+                        '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white
+                        '.MuiChartsAxis-tick': { stroke: '#fff !important' },       // tick marks white
+                        '.MuiChartsAxis-tickLabel': { fill: '#fff !important' },    // tick text white
+                        '.MuiChartsLegend-root': { color: '#fff !important' },      // legend white
+                        '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
+                        '.MuiChartsTooltip-paper': { background: '#fff !important' } // tooltip background white
                     }}
                     />
                 </Box>

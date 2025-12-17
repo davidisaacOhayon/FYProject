@@ -295,7 +295,7 @@ export default function IndexMap() {
 
 
   return (
-    <DeckGL controller={true} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
+    <DeckGL controller={false} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
