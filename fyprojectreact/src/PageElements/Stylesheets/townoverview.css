@@ -67,3 +67,24 @@
 .town-overview hr {
     width: 100%;
 }
+
+.display-options{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.display-options button{
+    background-color: var(--varPolBtn);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.disp-opt.active, .display-options button:hover{
+    background-color: var(--varPolBtnAct);
+}

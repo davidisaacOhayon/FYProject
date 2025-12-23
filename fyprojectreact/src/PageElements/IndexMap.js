@@ -133,9 +133,10 @@ export default function IndexMap() {
     if(reqURL && filterReqBody){
         axios.post(`http://localhost:8000${reqURL}`, filterReqBody)
         .then(res => console.log(res.data))
+        .catch(err => console.error('API Error:', err))
     }
     
-  }, [selectedFilter])
+  }, [selectedFilter, reqURL, filterReqBody])
 
 
 
@@ -295,7 +296,7 @@ export default function IndexMap() {
 
 
   return (
-    <DeckGL controller={false} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
+    <DeckGL controller={true} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>

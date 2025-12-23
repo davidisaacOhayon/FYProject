@@ -88,8 +88,14 @@ async def test_getTown(id: int, session:SessionDep):
         return {"Erorr" : "Trouble retrieving pollutant data"}
     return pollutant
 
+@app.post("/getPollutantVol/")
+async def pollutant_endpoint(query: PollutantFilterParams, session: SessionDep):
+    # Handle the filter params from frontend
+    # For now, just return success to unblock the UI
+    return {"status": "ok", "filters": query.dict()}
+
 @app.get("/getPollutantVol/")
-async def pollutant_endpoint(session: SessionDep, end_date: date, start_date: date = None ):
+async def pollutant_endpoint_get(session: SessionDep, end_date: date, start_date: date = None ):
     result = select(Pollutants).filter(Pollutants.day >= start_date)
 
     if end_date:
@@ -115,11 +121,4 @@ async def pollutant_endpoint_town(town: str, session: SessionDep, end_date: date
     rows = session.exec(query).all()
     return rows
 
-@app.post("/getPollutants")
-async def pollutant_endpoint(query: PollutantFilterParams, session: SessionDep):
-    result = select(Pollutants)
-
-async def diseases_endpoint(query: PollutantFilterParams):
-    # return {"nO" : query.nO, "sO" : query.sO, "o3": query.o3, "pM2" : query.pM2, "pM10" : query.pM10, "nO2" : query.nO2}
-    return query
 

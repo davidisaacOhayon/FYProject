@@ -22,6 +22,9 @@ export default function TownOverview({args, overlayRef}){
     
     // Contains applied pollutants for filtering
     const [pollutantFilter, setPollutantFilter] = useState([]);
+
+    // Contains applied display options of overview
+    const [displayOption, setDisplayOption] = useState('pollution');
     
     // List down each pollutant key
     const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
@@ -190,6 +193,15 @@ export default function TownOverview({args, overlayRef}){
                 className={'town-overview'} 
                 style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
                 <h2>{args.townName}</h2>
+                
+                <ul className={'display-options'}>
+                    <li>
+                        <Button onClick={() => setDisplayOption('pollution')} className={displayOption === 'pollution' ? 'disp-opt active' : 'disp-opt'}>Pollution Overview</Button>
+                    </li>
+                    <li>
+                        <Button onClick={() => setDisplayOption('disease')} className={displayOption === 'disease' ? 'disp-opt active' : 'disp-opt'}>Disease Overview</Button>
+                    </li>   
+                </ul>
                 <hr/>
                 <ul className={'pollutant-filters'}>
                     {pollutants.map((e, index) => 
