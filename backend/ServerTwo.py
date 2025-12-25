@@ -3,11 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
 from datetime import date
 from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlalchemy import text
+
 from contextlib import asynccontextmanager
 import pandas as pd
 import os
+import time
 import math
-from backend.stations import stationsTownMap, townsCoordinates
+# from pandasTest import getUsableDatasetLength
+from stations import stationsTownMap, townsCoordinates
 # ================= MODELS =================
 
 class Pollutants(SQLModel, table=True):
@@ -25,14 +29,14 @@ class Pollutants(SQLModel, table=True):
 # ================= SERVER =================
 
 class APIServer:
-    def __init__(self):
+    def __init__(self, dbprocessor: bool = False):
 
         # Ensure that the database URL is correctly set.
         self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
         self.engine = create_engine(self.db_url, echo=True)
-        self.dirPath = "./Datasets/"
+        self.dirPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Datasets")
 
-        self.stations = ["Msida","St. Paul's Bay", "Gharb", "Attard", "Station"]
+        self.stations = ["Msida","St. Paul's Bay", "Gharb", "Attard"]
 
         self.app = FastAPI(lifespan=self.lifespan)
 
@@ -45,10 +49,37 @@ class APIServer:
 
         if not self.check_db_connection():
             raise Exception("Database connection failed.")
+        
+        self.populate_db() if dbprocessor else None
 
         self.register_routes()
 
-    def __calculate_town_distance(lat1, lon1, lat2, lon2):
+        
+
+    def __cleanDataFrame(self, df):
+
+        '''Cleans the dataframe by handling NAN values, converting data types and grouping by date.'''  
+        # Convert 'Date' column to datetime, coerce errors
+        df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
+        # Drop rows where 'Date' is NaT
+        df = df.dropna(subset=["Date"]) 
+
+        # Convert all column names to numeric
+        for col in df.columns:
+            if col != 'Date':
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        # Fill NaN values in numeric columns with 0
+        num_cols = df.select_dtypes(include="number").columns
+        
+        df[num_cols] = df[num_cols].fillna(0)
+
+        # Group by 'Date' and calculate mean for numeric columns for each day   
+        df = df.groupby("Date", as_index=False).mean(numeric_only=True)
+
+        return df
+   
+    def __calculate_town_distance(self, lat1, lon1, lat2, lon2):
         '''Haversine formula to calculate distance between two lat/lon points'''
         R = 6371.0  # km
 
@@ -84,7 +115,7 @@ class APIServer:
     def populate_db(self):
         '''Will iterate through each file found within the defined file path,
            can handle csv / xlsx files.'''
-        
+    
         files = os.listdir(self.dirPath)
 
         for file in files:
@@ -93,62 +124,97 @@ class APIServer:
             print(f"{filename}  {ext}")
 
             match(ext):
-                case ".xlsx": self.__handleXLSXFile(self.dirPath + file)
+                case ".xlsx": self.__handleXLSXFile(os.path.join(self.dirPath, file))
                 case _: print("Invalid Dataset file found, skipping")
 
-    def __handleXLSXFile(self, path):
+
+    def __getUsableDatasetLength(self, path):
+        lengths = []
+        for station in self.stations:
+            df = pd.read_excel(path, sheet_name=station, na_values=['na'])
+            df = self.__cleanDataFrame(df)
+
+            lengths.append(df.shape[0])
+
+        return min(lengths)
+    
+    def __handleXLSXFile(self, path):   
         with Session(self.engine) as session:
+            # lim = getUsableDatasetLength(path)
+            mainData = {}
 
-            for station in self.stations:
+            towns = townsCoordinates.keys()
+            print(f"Towns to process: {len(towns)}")
+            count = 0
 
-                towns = stationsTownMap[station]['towns']
-                stationCoords = stationsTownMap[station]['coordinates']
+            timeNow = time.time()
+            # Go through each town
+            for town in towns:
+                print("count:", count)
+                count += 1
+                data = []
+                lim = self.__getUsableDatasetLength(path)
+                print(f"Usable dataset length: {lim}")
 
-                df = pd.read_excel(path, sheet_name=station, na_values=['na'])
-
-                # Convert 'Date' column to datetime, coerce errors
-                df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
-                # Drop rows where 'Date' is NaT
-                df = df.dropna(subset=["Date"]) 
-                # Fill NaN values in numeric columns with 0
-                num_cols = df.select_dtypes(include="number").columns
-                df[num_cols] = df[num_cols].fillna(0)
-
-                # Group by 'Date' and calculate mean for numeric columns for each day   
-                df = df.groupby("Date", as_index=False).mean(numeric_only=True)
-
-                for town in towns:
+                for row in range(0, lim):
+                    townData = {}
+                    townData['town'] = town
                     townLat, townLon = townsCoordinates[town]
-                    stationLat, stationLon = stationsTownMap[station]['coordinates']
-                    stationDistance = self.__calculate_town_distance(townLat, townLon, stationLat, stationLon)
-                    for row in df.iterrows():
-                        townName = town
-                        no_val = row[1]['NO (µg/m3)']
-                        no2_val = row[1]['NO2 (µg/m3)']
-                        so_val = row[1]['SO (µg/m3)']
-                        o_val = row[1]['O (µg/m3)']
-                        pm10_val = row[1]['PM10 (µg/m3)']
-                        pm25_val = row[1]['PM2.5 (µg/m3)']
+                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)', 'PM10 (µg/m3)', 'PM2.5 (µg/m3)', 'NO (µg/m3)']
+                    inverseDistance = 0
+
+                    for p in pollutants:
+                        # print(f"Processing pollutant {p} for town {town} at row {row}")
+                        pollutantSum = 0
+                        # Go through each station
+                        for station in self.stations:
+
+
+                            df = pd.read_excel(path, sheet_name=station, na_values=['na'])
+
+                            df = self.__cleanDataFrame(df)
+
+                            townData['Date'] = df.iloc[row]['Date'].date()
+
+                            stationLat, stationLon = stationsTownMap[station]['coordinates']
+                            distance = self.__calculate_town_distance(townLat, townLon, stationLat, stationLon)
+                            # print(f"Distance from {town} to station {station} is {distance} km")
+
+                            # print(f"Accessing {row}, pollutant {p}, station {station}")
+                            # print(df.iloc[row])
+                            try:
+                                pollutantSum += float(df.iloc[row][p] / distance) if df.iloc[row][p] != 0 else 0
+
+                                inverseDistance += 1 / distance
+                            except Exception as e:
+                                print(f"Error accessing row {row} for station {station}, pollutant {p}: {e}")
                         
-                        no_cal
+                        townData[p] = math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0
 
-
-
-
-
+                        print(f"Pollutant {p} for town {town} at row {row} is {townData[p]} ")
+                    data.append(townData)
                     object = Pollutants(
-                        town = row[1]['Town'],
-                        no_ugm3 = row[1]['NO (µg/m3)'],
-                        no2_ugm3 = row[1]['NO2 (µg/m3)'],
-                        so_ugm3 = row[1]['SO (µg/m3)'],
-                        o_ugm3 = row[1]['O (µg/m3)'],
-                        pm10_ugm3 = row[1]['PM10 (µg/m3)'],
-                        pm25_ugm3 = row[1]['PM2.5 (µg/m3)'],
-                        day = row[1]['Date']
+                        town = townData['town'],
+                        no2_ugm3 = townData['NO2 (µg/m3)'],
+                        no_ugm3= townData['NO (µg/m3)'],
+                        so_ugm3 = townData['SO2 (µg/m3)'],
+                        o_ugm3 = townData['O3 (µg/m3)'],
+                        pm10_ugm3 = townData['PM10 (µg/m3)'],
+                        pm25_ugm3 = townData['PM2.5 (µg/m3)'],
+                        day = townData['Date']
                     )
-
                     session.add(object)
-                    session.commit()
+
+            timefinish = time.time()
+            print(f"Time taken to process dataset: {timefinish - timeNow}")
+            session.commit()
+
+
+                # mainData[town] = data
+
+
+
+
 
 
     def get_session(self):
@@ -201,5 +267,7 @@ class APIServer:
 
 
 # ================= RUN =================
-server = APIServer()
+
+
+server = APIServer(dbprocessor=True)
 app = server.app

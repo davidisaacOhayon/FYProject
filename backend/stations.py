@@ -6,7 +6,7 @@
 
 stationsTownMap = {"Msida" : {"coordinates" : [35.895583, 14.493210], "towns": ["Msida", "San Gwann", "Iklin", "Birkirkara", "GharGhur","Pembroke", "St. Julian's","Valletta","Paola","Marsa","Hamrun","Floriana","Pieta", "Santa Venera","Qormi"] },
             "Zejtun" : {"coordinates": [35.854997, 14.543076], "towns": ["Zejtun", "Zabbar","Kalkara","Ghaxaq","Marsaskala","Birzebbugia","Zurrieq","Luqa","Mqabba","Qrendi","Safi","Marsaxlokk","Kirkop","Gudja","Tarxien","Santa Lucija","Fgura","Bormla","Birgu","Xghajra"] },
-            "Gharb" : {"coordinates": [35.890355, 14.433565], "towns": ["San Lawrenz","Ghasri","Kercem","Zebbug (Gozo)", "Xaghra", "Victoria", "Fontana", "Munxar", "Sannat","Qala","Nadur"]},
+            "Gharb" : {"coordinates": [36.061415, 14.209355], "towns": ["San Lawrenz","Ghasri","Kercem","Zebbug (Gozo)", "Xaghra", "Victoria", "Fontana", "Munxar", "Sannat","Qala","Nadur"]},
             "Attard" : {"coordinates": [35.890355, 14.433565], "towns": ["Attard", "Naxxar", "Mosta", "Lija", "Rabat", "Mtarfa", "Mdina", "Zebbug"]},
             "St. Paul's Bay" : {"coordinates": [35.947516, 14.394565], "towns": ["Mellieha", "Mgarr", "St. Paul's Bay"]}
             }
@@ -25,6 +25,8 @@ townsCoordinates ={
     "Sannat": [36.0247, 14.2422],
     "Qala": [36.0356, 14.3097],
     "Nadur": [36.0378, 14.2953],
+    "Xewkija": [36.032564, 14.256916],
+    "Ghajnsielem": [36.025408, 14.286442],
     # Attard Towns
     "Attard": [35.8897, 14.4425],
     "Naxxar": [35.9136, 14.4406],
@@ -34,6 +36,8 @@ townsCoordinates ={
     "Mtarfa": [35.8892, 14.3994],
     "Mdina": [35.8866, 14.4036],
     "Zebbug": [35.8719, 14.4411],
+    "Balzan" : [35.8984, 14.4521],
+    "Dingli" : [35.8600, 14.3797],
     # St. Paul's Bay Towns
     "Mellieha": [35.9564, 14.3622],
     "Mgarr": [35.9192, 14.3664],
