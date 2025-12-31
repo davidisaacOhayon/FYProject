@@ -3,7 +3,7 @@
 
 // Limits are in ug/m^3
 export const pollutantLimitsYearly = {
-    "SO2" : 40,
+    "SO" : 40,
     "NO2" : 40,
     "PM10" : 15,
     "PM25" : 5,
@@ -12,7 +12,7 @@ export const pollutantLimitsYearly = {
 }
 // Keywords for pollutants
 export const listofPollutants = [
-    "SO2",
+    "SO",
     "NO2",
     "PM10",
     "PM25",
@@ -23,7 +23,7 @@ export const listofPollutants = [
  
 
 export const pollutantNameKeyMap = {
-    "so2_ugm3" : "Sulfur Dioxide",
+    "so_ugm3" : "Sulfur Dioxide",
     "no2_ugm3" : "Nitrogen Dioxide",
     "pm10_ugm3" : "Particulate Matter 10",
     "pm25_ugm3" : "Particulate Matter 2.5",
@@ -31,7 +31,7 @@ export const pollutantNameKeyMap = {
     "o_ugm3" : "Ozone"
 }
 export const pollutantDBKeyMap = {
-    "SO2" : "so2_ugm3",
+    "SO" : "so_ugm3",
     "NO2" : "no2_ugm3",
     "PM10" : "pm10_ugm3",
     "PM25" : "pm25_ugm3",
@@ -39,7 +39,7 @@ export const pollutantDBKeyMap = {
     "O" : "o_ugm3"
 }
 export const pollutantLimits24Hr = {
-    "SO2" : 40,
+    "SO" : 40,
     "NO2" : 25,
     "PM10" : 50,
     "PM25" : 25,

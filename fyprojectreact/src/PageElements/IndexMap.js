@@ -1,4 +1,4 @@
-  import { useEffect, useState, useRef, useCallback} from 'react';
+  import { useEffect, useState, useRef, useCallback, useContext, createContext} from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
@@ -10,16 +10,18 @@ import tData from './Datasets/MaltaDistricts.Json';
 import FilterSelection from './Components/Filters/FilterSelection';
 import TownOverview from './Components/TownOverview';
 
+const OverlayContext = createContext(null);
+
 export default function IndexMap() {
- 
 
 
   useEffect(() => {
     // Instantiate layers
     setMapLayers([mapLayers, PollutionRegionlayer, SelectedRegionLayer]);
   },[])
-  
 
+  const [mapActive, setMapActive] = useState(true);
+  
   // Holds the map layers of Deck.GL. 
   const [mapLayers, setMapLayers] = useState([])
 
@@ -63,10 +65,6 @@ export default function IndexMap() {
 
   // Filter Options reference 
   const filterOptions = useRef();
-
-  const [overlayInteracted, setOverlayInterracted] = useState(false);
-  
-
 
   // Keeps track of selected filters
   const [selectedFilter, setFilter] = useState(null);
@@ -144,14 +142,15 @@ export default function IndexMap() {
   //////// EVENT LISTENERS 
  
   const clickEventOverlay = useCallback((e) => {
-  console.log("lol")
+ 
     
     if (overlayArgs != null){ 
-      console.log("lol")
+ 
 
       if (!(e.target == overlay.current) || !overlay.current.contains(e.target)){
-        console.log("setting false")
-        setOverlayArgs(null)
+ 
+        setOverlayArgs(null);
+        setMapActive(true);
       }
 
     }
@@ -274,9 +273,10 @@ export default function IndexMap() {
             return;
           }
         }
-        
+
         // Set town overlay args with name, and viewport coordinates
         setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)})
+        setMapActive(false);
       }
     },
 
@@ -296,7 +296,7 @@ export default function IndexMap() {
 
 
   return (
-    <DeckGL controller={true} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
+    <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
@@ -311,7 +311,8 @@ export default function IndexMap() {
         </div>
       </div>
 
-      {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs}/> : null}
+
+      {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
       
       <Map
         

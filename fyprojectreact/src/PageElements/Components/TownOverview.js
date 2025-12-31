@@ -12,14 +12,18 @@ import { pollutantDBKeyMap, pollutantNameKeyMap } from "./Backend/PollutantConce
 import '../Stylesheets/townoverview.css';
 import Button from "@mui/material/Button";
 import Box from '@mui/material/Box';
+import Slider from '@mui/material/Slider';
 import { LineChart } from '@mui/x-charts';
 import { display } from "@mui/system";
 
-export default function TownOverview({args, overlayRef}){
+export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
     
+    // Contains the range for the xAxis dates
+    const [monthRange, setMonthRange] = useState([0, 11]);
+
     // Contains applied pollutants for filtering
     const [pollutantFilter, setPollutantFilter] = useState([]);
 
@@ -27,7 +31,7 @@ export default function TownOverview({args, overlayRef}){
     const [displayOption, setDisplayOption] = useState('pollution');
     
     // List down each pollutant key
-    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
+    const pollutants = ['SO', 'NO', 'NO2', 'PM25','PM10']
 
     // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
@@ -45,12 +49,27 @@ export default function TownOverview({args, overlayRef}){
     const overlayY = useRef(0);
 
     const pollutantColors = {
-        'SO2': "#f5d142",
+        'SO': "#f5d142",
         'NO' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",
         'PM10': '#96000d'
-    }
+    };
+
+    const marks = [
+        { value: 0, label: "Jan" },
+        { value: 1, label: "Feb" },
+        { value: 2, label: "Mar" },
+        { value: 3, label: "Apr" },
+        { value: 4, label: "May" },
+        { value: 5, label: "Jun" },
+        { value: 6, label: "Jul" },
+        { value: 7, label: "Aug" },
+        { value: 8, label: "Sep" },
+        { value: 9, label: "Oct" },
+        { value: 10, label: "Nov" },
+        { value: 11, label: "Dec" },
+    ];
     // Process pollutant data for risk analysis on potential diseases
     useEffect(() => {
         if( args.townName == null){
@@ -61,7 +80,7 @@ export default function TownOverview({args, overlayRef}){
         // Retrieve pollutant info on town
         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {setPollutants(res.data) 
-            console.log(`Data retrieved ${res.data}`)
+            // console.log(`Data retrieved ${res.data}`)
              loadRealPollutantSet()
         }) 
             
@@ -77,7 +96,7 @@ export default function TownOverview({args, overlayRef}){
         // Correspond any excess concentrations with respective diseases.
         // If there are no excesses, return that town is in a 'healthy' state
 
-    },[args, pollutantFilter])
+    },[args, pollutantFilter, monthRange])
 
     const applyPollutant = (pol) => {
         if (!checkActivePollutant(pol)) {
@@ -85,6 +104,12 @@ export default function TownOverview({args, overlayRef}){
         }else{
             setPollutantFilter(prev => [...prev.filter(x => pol !== x)])
         }
+    }
+
+    const applyYearRange = (e) => {
+        setMonthRange(e.target.value);
+        console.log(e.target.value)
+
     }
 
     const checkActivePollutant = (pol) =>{
@@ -95,19 +120,42 @@ export default function TownOverview({args, overlayRef}){
         if (!pollutantReadings){
             return;
         }
+        // Contain Pollutant Data
         let dataset = []
+        // Contain Dates data 
         let datedataset = []
-        pollutantReadings.map( (set, index) => {
+
+        let polReading;
+
+        // Filter data by month range 
+        if(monthRange) {
+
+            polReading = pollutantReadings.filter(set => {
+                const date = new Date(set['day']);
+                // console.log(`${date.getMonth()} compared to ${yearRange}`)
+                return monthRange[0] <= date.getMonth() && date.getMonth() <= monthRange[1];
+            })
+
+            console.log(polReading);
+
+        }
+        
+        polReading.map( (set, index) => {
+            // tempSet of 'row'
             let tempSet = {}
+            // Retain Date of row
             tempSet["date"] = set['day']
+            // Get each pollutant reading of current row
             pollutantFilter.map( (pol ,indx) => {
                 
                 tempSet[pol] = set[pollutantDBKeyMap[pol]];
                 
             })
+            // push onto list of dataset
             dataset.push(tempSet);
         })
-
+        
+        // Push current row date onto date dataset list
         dataset.map(d => {
             datedataset.push(new Date(d.date));
         })
@@ -115,12 +163,13 @@ export default function TownOverview({args, overlayRef}){
         setDateData(datedataset);
 
         let tempDataSet = []
+
+        // Apply display filter 
         pollutantFilter.map((pol) => {
             let tempSet = {}
             tempSet['label'] = pol;
             tempSet['data'] = dataset.map(d => d[pol] ?? null);
             tempSet['color'] = pollutantColors[pol];
-            console.log("TEMP SET BEING PUSHED: " + JSON.stringify(tempSet));
             tempDataSet.push(tempSet);
         });
         setDisplayData(tempDataSet);
@@ -130,6 +179,9 @@ export default function TownOverview({args, overlayRef}){
     }
 
     const mouseDown = (e) => {
+        if(e.target !== overlayRef.current){
+            return;
+        }
 
         e.stopPropagation();
         startX.current = e.clientX;
@@ -193,7 +245,7 @@ export default function TownOverview({args, overlayRef}){
                 className={'town-overview'} 
                 style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
                 <h2>{args.townName}</h2>
-                
+                <button onClick={() => {setArgs(null); setMapActive(true)}}>X</button>
                 <ul className={'display-options'}>
                     <li>
                         <Button onClick={() => setDisplayOption('pollution')} className={displayOption === 'pollution' ? 'disp-opt active' : 'disp-opt'}>Pollution Overview</Button>
@@ -212,6 +264,8 @@ export default function TownOverview({args, overlayRef}){
 
                 </ul>
 
+ 
+
                 <div className={'town-overview-details'}>
 
                 <Box>
@@ -219,7 +273,13 @@ export default function TownOverview({args, overlayRef}){
                     xAxis={[
                         {
                         data: dateData !== null ? dateData : [],
-                        scaleType: 'time',       
+                        scaleType: 'time',      
+                        zoom: true,
+                        valueFormatter: (date) => {
+                            const month = date.getMonth();
+                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            return `${monthNames[month]} ${date.getFullYear().toString()}`;
+                        }
                         }
                         
                     ]}
@@ -239,6 +299,30 @@ export default function TownOverview({args, overlayRef}){
                     }}
                     />
                 </Box>
+
+                <div className={'year-range-filter'}>
+                    <Slider
+                        min={0}
+                        max={11}
+                        step={1}
+                        value={monthRange}
+                        onChange={(e, v) => setMonthRange(v)}
+                        className="year-range-input"
+                        marks={marks}
+                        sx={{
+                            "& .MuiSlider-mark": {
+                            backgroundColor: "white",
+                            height: 8,
+                            width: 2,
+                            },
+                            "& .MuiSlider-markLabel": {
+                            color: "white",
+                            fontSize: "0.75rem",
+                            },
+                        }}
+                    />
+                </div>
+                
                 </div>
             </div>
         </>

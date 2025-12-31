@@ -204,10 +204,12 @@ class APIServer:
                         day = townData['Date']
                     )
                     session.add(object)
+                print(f"Finished processing town: {town}")
+                session.commit()
 
             timefinish = time.time()
             print(f"Time taken to process dataset: {timefinish - timeNow}")
-            session.commit()
+
 
 
                 # mainData[town] = data
@@ -269,5 +271,5 @@ class APIServer:
 # ================= RUN =================
 
 
-server = APIServer(dbprocessor=True)
+server = APIServer(dbprocessor=False)
 app = server.app

@@ -5,15 +5,16 @@
 }
 
 .town-overview{
+    cursor:move;
     color: white;
     background-color: #303030;
     box-sizing: border-box;
     padding: 10px;
     width: auto;
     height: auto;
-    min-width: 30vw;
+    min-width: 50vw;
     min-height: 30vh;
-    /* resize: both; */
+    resize: both;
     display: flex;
     flex-direction: column;
     box-shadow: 0px 0px 0px 2px rgb(121, 121, 121);
@@ -87,4 +88,19 @@
 }
 .disp-opt.active, .display-options button:hover{
     background-color: var(--varPolBtnAct);
+}
+.year-range-filter{
+    width: 100%;
+    padding: clamp(20px, 30px, 40px);
+    box-sizing: border-box;
+    color: white;
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* background-color: red; */
+}
+.year-range-input{
+    color: white;
+    width: 90%;
 }
