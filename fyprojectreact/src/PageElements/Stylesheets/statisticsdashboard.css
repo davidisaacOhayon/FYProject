@@ -1,0 +1,120 @@
+:root{
+    --varPolBtn: #1f1f1f;
+    --varPolBtnAct: #db7e0e;
+    --varBG: #272727;
+}
+
+.statistics-monitor-main{
+    top: 3%;
+    left: 10%;
+    position: absolute;
+    overflow-y: scroll;
+    z-index: 1000;
+    width: 88%;
+    height: 90%;
+    background-color: var(--varBG);
+    border: 5px solid rgba(0, 0, 0, 0.531);
+    color: white;
+    padding: 10px;
+    box-sizing: border-box;
+}
+.statistics-monitor-main h1{
+    font-weight: 900;
+}
+
+.dashboard-pollutant-filters{
+    display: flex;
+    list-style: none;
+    width: clamp(10rem, 25rem, 35rem);
+    padding: 0;
+    margin: 0;
+    height: 3vh;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.dashboard-towns{
+    width: 100%;
+    display: flex;
+    height: clamp(20vh, 60vh, 65vh);
+    background-color:#191919;
+}
+.dashboard-town-filter-container{
+    height: 100%;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color:#1f1f1f;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.085);
+    width: 20%;
+}
+.dashboard-town-filter{ 
+    height: 85%;
+    width: 80%;
+    margin: 0px;
+    padding: 0px;
+    overflow-y: scroll;
+    background-color: #1c1c1c;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.085);
+}
+
+.dsh-pol-btn {
+    flex: 1;
+    min-width: 0;
+    width: 1vw;
+}
+
+.dsh-pol-btn button{
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    color: white;
+    border-radius: 0;
+    text-decoration: none;
+    background-color: rgba(0, 0, 0, 0);
+    border: none;
+}
+
+.dsh-city-btn{
+    width: 100%;
+    height: clamp(1vh, 5vh, 5vh);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10%;
+}
+
+.dsh-city-btn button{
+    width: 100%;
+    font-size: clamp(1rem, 1.3vmin, 2rem);
+    color: white;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    border: none;
+}
+.dsh-city-btn.active button{
+    color: rgba(255, 46, 46, 0.777);
+    font-weight: 700;
+}
+.town-indicator{
+    position: relative;
+    width: clamp(10px, 5vw, 20px);
+    height: 10px;
+}
+.town-indicator.active {
+        background-color: red;
+}
+
+.statistics-monitor-main hr{
+    width: 100%;
+}
+.town-dashboards-container{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: clamp(2%, 4%, 5%);
+    margin: 20px;
+    overflow-x: scroll;
+}

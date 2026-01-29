@@ -9,6 +9,7 @@ import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
 import tData from './Datasets/MaltaDistricts.Json';
 import FilterSelection from './Components/Filters/FilterSelection';
 import TownOverview from './Components/TownOverview';
+import StatisticsDashboard from './StatisticsDashboard';
 
 const OverlayContext = createContext(null);
 
@@ -19,6 +20,10 @@ export default function IndexMap() {
     // Instantiate layers
     setMapLayers([mapLayers, PollutionRegionlayer, SelectedRegionLayer]);
   },[])
+
+
+
+  const [dashboardActive, setDashboardActive] = useState(false);
 
   const [mapActive, setMapActive] = useState(true);
   
@@ -33,7 +38,7 @@ export default function IndexMap() {
     "pM10" : { name: "PM 10", flag : false, col : "#24A3D4"},
     "nO2" :{ name: "Nitrogen Dioxide - NO2", flag : false, col : "#24A3D4"},
     "o3" : { name: "Ozone - O3", flag : false, col : "#24A3D4"}
-    })
+  })
 
   // Contains info of all diseases we will monitor.
   const [diseases, setDiseases] = useState({
@@ -41,6 +46,12 @@ export default function IndexMap() {
      "LungC" :{ name: "Lung Cancer", flag : false, col : "#F5E027"},
      "Pneu" : { name: "Pneumonia", flag : false, col : "#F5E027"}
   })
+
+  const [views, setViews] = useState({
+     "Town Overview" : { name: "Town Overview", flag : true, col : "#F5E027"},
+     "Town Columns" :{ name: "Lung Cancer", flag : false, col : "#F5E027"},
+  }
+  )
 
   // Current town being hovered
   const [hoveredTown, setHovered] = useState(null);
@@ -51,11 +62,14 @@ export default function IndexMap() {
   // Disease Filter reference
   const diseaseFilter = useRef(null);
 
-  // Main Deck Component ref
-  const deckRef = useRef();
-
   // Pollutant Filter reference
   const pollutantFilter = useRef(null);
+
+  // View Filter reference
+  const viewFilter = useRef(null);
+
+  // Main Deck Component ref
+  const deckRef = useRef();
 
   // Filter Box reference
   const filterBox = useRef(null);
@@ -117,6 +131,8 @@ export default function IndexMap() {
       case 'diseaseFilter': {setFilterReqBody(diseases) 
         setReqUrl("/getDiseaseVol")
         break;}
+
+
 
       default: break;
     }
@@ -296,24 +312,27 @@ export default function IndexMap() {
 
 
   return (
+    <>
     <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
           <button onClick={() => setFilter('diseaseFilter')} className={selectedFilter == 'diseaseFilter' ? "map-control-btn active" : "map-control-btn"}>Diseases</button>
-          <button className="map-control-btn">Stats Monitor</button>
+          <button onClick={() => setFilter('viewFilter')} className={selectedFilter == 'viewFilter' ? "map-control-btn active" : "map-control-btn"}>Views</button>
+          <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Stats Monitor</button>
           <button className="map-control-btn">Borders</button>
         </div>
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
           {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
           {selectedFilter == 'diseaseFilter' ? <FilterSelection useRef={diseaseFilter} data={diseases} setData={setDiseases} /> : null}
+          {selectedFilter == 'viewFilter' ? <FilterSelection useRef={viewFilter} data={views} setData={setViews} /> : null}
         </div>
       </div>
 
 
       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
-      
+     
       <Map
         
         id="MainMap"
@@ -321,5 +340,7 @@ export default function IndexMap() {
         mapboxAccessToken={MapAccessToken}
       />
     </DeckGL>
+    {dashboardActive ? <StatisticsDashboard /> : null}
+    </>
   );
 }

@@ -3,18 +3,18 @@ import Box from '@mui/material/Box';
 import { LineChart } from '@mui/x-charts';
 
 
-export default function TownOverviewChart({displayData, yearData}){
+export default function TownOverviewChart({yData, xData}){
 
 
-
+    
 
     return (
 
     <Box>
         <LineChart
-        key={JSON.stringify(displayData)}
-        xAxis={[ { scaleType: 'band', data : yearData !== null ? yearData : []}]}
-        series={displayData !== null ? displayData : []}
+        key={JSON.stringify(xData)}
+        xAxis={[ { scaleType: 'band', data : xData !== null ? yData : []}]}
+        series={xData !== null ? xData: []}
         height={300}
         sx={{
             '.MuiChartsAxis-line': { stroke: '#fff' },       // axis lines white

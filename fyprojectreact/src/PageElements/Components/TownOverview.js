@@ -80,11 +80,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         // Retrieve pollutant info on town
         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {setPollutants(res.data) 
-            // console.log(`Data retrieved ${res.data}`)
-             loadRealPollutantSet()
+            processPollutantData()
         }) 
-            
-
         .catch(err => console.log(err.res.data))
         
         // loadPollutantsDataset();
@@ -106,17 +103,12 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         }
     }
 
-    const applyYearRange = (e) => {
-        setMonthRange(e.target.value);
-        console.log(e.target.value)
-
-    }
 
     const checkActivePollutant = (pol) =>{
         return pollutantFilter.includes(pol);
     }
 
-    const loadRealPollutantSet = () => {
+    const processPollutantData = () => {
         if (!pollutantReadings){
             return;
         }
@@ -170,6 +162,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
             tempSet['label'] = pol;
             tempSet['data'] = dataset.map(d => d[pol] ?? null);
             tempSet['color'] = pollutantColors[pol];
+
             tempDataSet.push(tempSet);
         });
         setDisplayData(tempDataSet);
@@ -244,7 +237,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 ref={overlayRef} 
                 className={'town-overview'} 
                 style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
-                <h2>{args.townName}</h2>
+                <h1>{args.townName}</h1>
                 <button onClick={() => {setArgs(null); setMapActive(true)}}>X</button>
                 <ul className={'display-options'}>
                     <li>
@@ -281,7 +274,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                             return `${monthNames[month]} ${date.getFullYear().toString()}`;
                         }
                         }
-                        
                     ]}
                     series={[
                         ...displayData !== null ? displayData.map( d => (
