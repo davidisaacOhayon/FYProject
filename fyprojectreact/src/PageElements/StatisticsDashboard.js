@@ -1,7 +1,8 @@
 
 
 import './Stylesheets/statisticsdashboard.css';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, Suspense} from 'react';
+import TownPollutantBoard from './Components/DashboardComponents/TownPollutantBoard';
 import axios from 'axios';
 import TownOverviewDashboard from './Components/DashboardComponents/TownOverviewDashboard';
 import { pollutantDBKeyMap } from './Components/Backend/PollutantConcentrationLimits';
@@ -12,7 +13,7 @@ import Slider from '@mui/material/Slider';
 
 export default function StatisticsDashboard(){
 
-    
+
     const marks = [
         { value: 0, label: "Jan" },
         { value: 1, label: "Feb" },
@@ -345,6 +346,8 @@ export default function StatisticsDashboard(){
                     />
                 </div>
 
+
+            {townFilter.length != 0 && !isLoading ? <TownPollutantBoard towns={townFilter}/> : null}
 
 
 

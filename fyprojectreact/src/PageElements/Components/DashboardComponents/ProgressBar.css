@@ -1,0 +1,31 @@
+
+
+* {
+    padding: 0px;
+    margin: 0px;
+}
+
+
+.progress-bar-container{
+    width: 100%;
+    display: flex;
+    height: auto;
+    background-color: rgb(42, 42, 42);
+    padding: 10px;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 10px;
+}
+.progress-bar{
+    width: 100%;
+    height: 20px;
+    background-color: rgb(30, 30, 30);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.progress-bar-fill{
+    height: 100% !important;
+    background-color: var(--varPolBtn);
+    border-radius: 5px;
+    display: block;
+}

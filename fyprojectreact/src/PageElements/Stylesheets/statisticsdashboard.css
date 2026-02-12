@@ -118,3 +118,54 @@
     margin: 20px;
     overflow-x: scroll;
 }
+
+
+/* -------- Town Pollutant Board */
+.town-pollutant-entries-container{
+    display: flex;
+    width: 100%;
+    gap: clamp(5%, 5%, 15%);
+}
+.town-pollutant-board{
+    margin-top: clamp(5vh, 4vh, 6vh);
+    width: 100%;
+    height: auto;
+    background-color: #1f1f1f;
+    min-height: 30vh;
+    padding: 10px;
+    box-sizing: border-box;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.085);
+}
+.town-pollutant-entries-section{
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2%, 4%, 5%);
+    margin-top: clamp(2vh, 2vh, 4vh);
+}
+
+.pollutant-filter-button{
+    width: clamp(5rem, 6vw, 15rem);
+    background-color: black;
+    color: white;
+    border: none;
+    height: clamp(3vh, 3vh, 5vh);
+}
+.town-pollutant-entry{
+    width: 100%;
+    height: clamp(5vh, 5vh, 10vh);
+    display: flex;
+    gap: clamp(10%, 10%, 20%);
+    background-color: var(--varBG);
+    padding: 10px;
+    align-items: center;
+    justify-content: space-between;
+    
+}
+.town-pollutant-entry h3{
+    font-weight: 300;
+}
+.town-pollutant-bar-graph{
+    width: 50%;
+    height: clamp(25vh, 80vh, 70vh);
+    background-color: #1c1c1c;
+}

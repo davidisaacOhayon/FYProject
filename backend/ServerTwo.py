@@ -2,9 +2,10 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
 from datetime import date
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, func, select
 from sqlalchemy import text
-
+from pydantic import BaseModel
+import logging
 from contextlib import asynccontextmanager
 import pandas as pd
 import os
@@ -25,6 +26,11 @@ class Pollutants(SQLModel, table=True):
     pm25_ugm3: float | None = None
     day: date | None = None
 
+# ================= PAYLOAD MODELS =================
+
+class TownsPollutantPayload(BaseModel):
+    towns: list[str]
+    pollutant: str
 
 # ================= SERVER =================
 
@@ -214,11 +220,6 @@ class APIServer:
 
                 # mainData[town] = data
 
-
-
-
-
-
     def get_session(self):
         '''Individualizes each DB request within a session to prevent conflicts.'''
         with Session(self.engine) as session:
@@ -251,6 +252,46 @@ class APIServer:
                 query = query.where(Pollutants.day <= end_date)
 
             return session.exec(query.order_by(Pollutants.day)).all()
+
+        @self.app.post("/getPollutantAvgTowns/")
+        def get_pollutants_avg_towns(
+            payload: TownsPollutantPayload,
+            start_date: date | None = None,
+            end_date: date | None = None,
+            session: Session = Depends(self.get_session),
+        ):
+            
+            towns = payload.towns
+            pollutant = payload.pollutant
+
+            
+            pollutantDBKeyMap = {
+                "SO" : "so_ugm3",
+                "NO2" : "no2_ugm3",
+                "PM10" : "pm10_ugm3",
+                "PM25" : "pm25_ugm3",
+                "NO": "no_ugm3",
+                "O" : "o_ugm3"
+            }
+
+            col = getattr(Pollutants, pollutantDBKeyMap[pollutant])
+            
+            query = (
+                    select(
+                        Pollutants.town,
+                        func.round(func.avg(col), 3).label("avg")
+                    )
+                    .where(Pollutants.town.in_(towns))
+                    .group_by(Pollutants.town)
+                )
+
+            if start_date:
+                query = query.where(Pollutants.day >= start_date)
+            if end_date:
+                query = query.where(Pollutants.day <= end_date)
+
+            return session.exec(query.order_by("avg")).mappings().all()
+        
 
         @self.app.get("/getPollutantVol/")
         def get_pollutants(

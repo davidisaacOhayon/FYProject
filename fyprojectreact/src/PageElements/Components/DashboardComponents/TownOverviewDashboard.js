@@ -6,7 +6,7 @@ export default function TownOverviewDashboard({town, data, dateData}){
 
     const pollutantColors = {
         'SO': "#f5d142",
-        'NO' : "#b8c916",
+        'O' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",
         'PM10': '#96000d'

@@ -15,6 +15,7 @@ import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
 import { LineChart } from '@mui/x-charts';
 import { display } from "@mui/system";
+import ProgressBar from "./DashboardComponents/ProgressBar";
 
 export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
@@ -31,7 +32,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const [displayOption, setDisplayOption] = useState('pollution');
     
     // List down each pollutant key
-    const pollutants = ['SO', 'NO', 'NO2', 'PM25','PM10']
+    const pollutants = ['SO', 'NO', 'NO2', 'PM25','PM10', 'O'];
 
     // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
@@ -53,8 +54,31 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         'NO' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",
-        'PM10': '#96000d'
+        'PM10': '#96000d',
+        'O': "#bf00ff"
     };
+    const WHOThresholds = {
+        'SO': 40,
+        'NO' : 0.40,
+        'NO2': 10,
+        'PM25': 5,
+        'PM10': 15,
+        'O': 60
+    }
+
+    const computeAdverseLevel = (pol, avg) => {
+        const threshold = WHOThresholds[pol] / 3;
+
+        if(avg <= threshold){
+            return <span style={{color: "#51d23e"}}>Minimal Risk</span>;
+        } else if (avg <= threshold * 2){
+            return <span style={{color: "#f78d41"}}>Moderate Risk</span>;
+        }else if (avg > threshold * 3){
+            return <span style={{color: "#e72a39"}}>At Risk</span>;
+        }
+
+    }
+
 
     const marks = [
         { value: 0, label: "Jan" },
@@ -127,8 +151,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 // console.log(`${date.getMonth()} compared to ${yearRange}`)
                 return monthRange[0] <= date.getMonth() && date.getMonth() <= monthRange[1];
             })
-
-            console.log(polReading);
 
         }
         
@@ -237,8 +259,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 ref={overlayRef} 
                 className={'town-overview'} 
                 style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
-                <h1>{args.townName}</h1>
-                <button onClick={() => {setArgs(null); setMapActive(true)}}>X</button>
+                <h1 >{args.townName}</h1>
+                <button className={"close-btn-overview"} onClick={() => {setArgs(null); setMapActive(true)}}>Close</button>
                 <ul className={'display-options'}>
                     <li>
                         <Button onClick={() => setDisplayOption('pollution')} className={displayOption === 'pollution' ? 'disp-opt active' : 'disp-opt'}>Pollution Overview</Button>
@@ -314,7 +336,18 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         }}
                     />
                 </div>
+
+
                 
+                </div>
+                <div className={"pollution-yearly-avg"}>
+                    <Box className={"pollution-yearly-avg-box"}>
+                        {pollutants.map(pol => {        
+                            const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;
+                            return <ProgressBar title={`${pol}`} value={mean} threshold={WHOThresholds[pol]} color={pollutantColors[pol]} key={pol} advLevel={computeAdverseLevel(pol, mean)}/>
+                         })
+                        }
+                    </Box>
                 </div>
             </div>
         </>
