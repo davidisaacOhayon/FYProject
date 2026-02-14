@@ -42,7 +42,7 @@ class APIServer:
         self.engine = create_engine(self.db_url, echo=True)
         self.dirPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Datasets")
 
-        self.stations = ["Msida","St. Paul's Bay", "Gharb", "Attard"]
+        self.stations = ["Msida","St. Paul's Bay", "Gharb", "Attard", "Zejtun"]
 
         self.app = FastAPI(lifespan=self.lifespan)
 
@@ -65,25 +65,32 @@ class APIServer:
     def __cleanDataFrame(self, df):
 
         '''Cleans the dataframe by handling NAN values, converting data types and grouping by date.'''  
-        # Convert 'Date' column to datetime, coerce errors
+        # Convert 'Date' & 'DatePM' column to datetime, coerce errors
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
+        df['DatePM'] = pd.to_datetime(df['DatePM'], errors='coerce', dayfirst=True)
+ 
         # Drop rows where 'Date' is NaT
         df = df.dropna(subset=["Date"]) 
+ 
 
         # Convert all column names to numeric
         for col in df.columns:
-            if col != 'Date':
+            if col != 'Date' and col != 'DatePM':
                 df[col] = pd.to_numeric(df[col], errors='coerce')
-
         # Fill NaN values in numeric columns with 0
         num_cols = df.select_dtypes(include="number").columns
-        
+    
         df[num_cols] = df[num_cols].fillna(0)
+
+        # we will have to copy over
+        # The daily aggregates of the PM readings.
+
+        pm_df = df[['DatePM', 'PM2.5 (µg/m3)', 'PM10 (µg/m3)']].copy()
 
         # Group by 'Date' and calculate mean for numeric columns for each day   
         df = df.groupby("Date", as_index=False).mean(numeric_only=True)
-
-        return df
+ 
+        return df, pm_df
    
     def __calculate_town_distance(self, lat1, lon1, lat2, lon2):
         '''Haversine formula to calculate distance between two lat/lon points'''
@@ -138,10 +145,12 @@ class APIServer:
         lengths = []
         for station in self.stations:
             df = pd.read_excel(path, sheet_name=station, na_values=['na'])
-            df = self.__cleanDataFrame(df)
-
+            # Optimize this please, we should really just clean the dataframe once.
+            df, pm_df = self.__cleanDataFrame(df)
+            print(df.shape)
             lengths.append(df.shape[0])
 
+        print(f"Dataset lengths for each station: {lengths}")
         return min(lengths)
     
     def __handleXLSXFile(self, path):   
@@ -162,25 +171,36 @@ class APIServer:
                 lim = self.__getUsableDatasetLength(path)
                 print(f"Usable dataset length: {lim}")
 
+                # Iterate through each data row for the town
                 for row in range(0, lim):
                     townData = {}
                     townData['town'] = town
                     townLat, townLon = townsCoordinates[town]
-                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)', 'PM10 (µg/m3)', 'PM2.5 (µg/m3)', 'NO (µg/m3)']
+                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)']
                     inverseDistance = 0
-
+                    # go through each pollutant
                     for p in pollutants:
                         # print(f"Processing pollutant {p} for town {town} at row {row}")
                         pollutantSum = 0
-                        # Go through each station
+                        # Go through each station available
                         for station in self.stations:
-
-
+                            # Read the station data 
                             df = pd.read_excel(path, sheet_name=station, na_values=['na'])
 
-                            df = self.__cleanDataFrame(df)
+                            # Clean data frame by handling NAN values, converting data types and grouping by date
+                            df, pm_df = self.__cleanDataFrame(df)
 
-                            townData['Date'] = df.iloc[row]['Date'].date()
+                            # Get date for current row
+                            townData['Date'] = df.iloc[row]['Date']
+
+
+
+                            # Get PM10 and PM2.5 values for the town based on the date of the current row
+                            # Congrats to ERA for not formatting the date in the same way across all stations,
+                            # so we have to do this for each station instead of just once per row
+
+                            townData['PM10 (µg/m3)'] = pm_df.loc[pm_df["DatePM"] == townData['Date']]['PM10 (µg/m3)'].iloc[0] 
+                            townData['PM2.5 (µg/m3)'] = pm_df.loc[pm_df["DatePM"]== townData['Date']]['PM2.5 (µg/m3)'].iloc[0] 
 
                             stationLat, stationLon = stationsTownMap[station]['coordinates']
                             distance = self.__calculate_town_distance(townLat, townLon, stationLat, stationLon)
@@ -198,14 +218,16 @@ class APIServer:
                         townData[p] = math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0
 
                         print(f"Pollutant {p} for town {town} at row {row} is {townData[p]} ")
+
                     data.append(townData)
+                    print(f"Finalized Pollutant Record town:{town} date:{townData['Date']} NO2:{townData['NO2 (µg/m3)']} SO2:{townData['SO2 (µg/m3)']} O3:{townData['O3 (µg/m3)']} PM10:{townData['PM10 (µg/m3)']} PM25:{townData['PM2.5 (µg/m3)']}")
                     object = Pollutants(
                         town = townData['town'],
                         no2_ugm3 = townData['NO2 (µg/m3)'],
-                        no_ugm3= townData['NO (µg/m3)'],
+                        no_ugm3= 0,
                         so_ugm3 = townData['SO2 (µg/m3)'],
                         o_ugm3 = townData['O3 (µg/m3)'],
-                        pm10_ugm3 = townData['PM10 (µg/m3)'],
+                        pm10_ugm3 = townData['PM10 (µg/m3)'] if 'PM10 (µg/m3)' in townData else 0,
                         pm25_ugm3 = townData['PM2.5 (µg/m3)'],
                         day = townData['Date']
                     )
@@ -312,5 +334,5 @@ class APIServer:
 # ================= RUN =================
 
 
-server = APIServer(dbprocessor=False)
+server = APIServer(dbprocessor=True)
 app = server.app
