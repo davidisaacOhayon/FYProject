@@ -1,4 +1,4 @@
-  import { useEffect, useState, useRef, useCallback, useContext, createContext} from 'react';
+  import { useEffect, useState, useRef, useCallback, useContext, createContext, useMemo} from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
@@ -12,7 +12,7 @@ import TownOverview from './Components/TownOverview';
 import StatisticsDashboard from './StatisticsDashboard';
 
 const OverlayContext = createContext(null);
-
+ 
 export default function IndexMap() {
 
 
@@ -20,7 +20,6 @@ export default function IndexMap() {
     // Instantiate layers
     setMapLayers([mapLayers, PollutionRegionlayer, SelectedRegionLayer]);
   },[])
-
 
 
   const [dashboardActive, setDashboardActive] = useState(false);
@@ -89,6 +88,11 @@ export default function IndexMap() {
   // Request URL. Changes upon filter selection
   const [reqURL, setReqUrl] = useState(null)
 
+
+
+
+
+ 
   // Map Access Token
   const MapAccessToken = 'pk.eyJ1Ijoib2hheW9yaW5vIiwiYSI6ImNtZXN1bjd4ODA4d2QyanM4aTBiNm9zN2gifQ.JAp21RU5bHyH5Y0xzdOZvQ';
 
@@ -330,9 +334,9 @@ export default function IndexMap() {
         </div>
       </div>
 
-
+ 
       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
-     
+  
       <Map
         
         id="MainMap"

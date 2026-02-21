@@ -20,7 +20,14 @@ export const listofPollutants = [
     "NO"
 ]
 
- 
+export const polAcronymNameMap = {
+    "SO2" : "Sulfur Dioxide",
+    "NO2" : "Nitrogen Dioxide",
+    "PM10" : "Particulate Matter 10",
+    "PM25" : "Particulate Matter 2.5",
+    "NO" : "Nitric Oxide",
+    "O3" : "Ozone"
+}
 
 export const pollutantNameKeyMap = {
     "so_ugm3" : "Sulfur Dioxide",

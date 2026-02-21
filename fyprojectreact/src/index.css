@@ -11,3 +11,11 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+.warning-box{
+    background-color: rgb(255, 127, 8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}

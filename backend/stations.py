@@ -13,7 +13,7 @@ stationsTownMap = {"Msida" : {"coordinates" : [35.895583, 14.493210], "towns": [
 
 
 townsCoordinates = {
-    # Gharb Towns (GOZO)
+    # # Gharb Towns (GOZO)
     # "San Lawrenz": [36.0556, 14.2039],
     # "Ghasri": [36.0606, 14.2264],
     # "Kercem": [36.0425, 14.2197],
@@ -42,11 +42,11 @@ townsCoordinates = {
     # "Mellieha": [35.9564, 14.3622],
     # "Mgarr": [35.9192, 14.3664],
     # "St Paul's Bay": [35.9470, 14.4026],
-    # # Zejtun Towns
-    # "Zejtun": [35.8547, 14.5331],
-    # "Zabbar": [35.8725, 14.5389],
-    # "Kalkara": [35.8894, 14.5328],
-    # "Ghaxaq": [35.8483, 14.5175],
+    # Zejtun Towns
+    "Zejtun": [35.8547, 14.5331],
+    "Zabbar": [35.8725, 14.5389],
+    "Kalkara": [35.8894, 14.5328],
+    "Ghaxaq": [35.8483, 14.5175],
 
     "Marsaskala": [35.8628, 14.5564],
     "Birzebbugia": [35.8258, 14.5269],

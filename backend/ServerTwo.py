@@ -93,7 +93,8 @@ class APIServer:
         return df, pm_df
    
     def __calculate_town_distance(self, lat1, lon1, lat2, lon2):
-        '''Haversine formula to calculate distance between two lat/lon points'''
+        '''Haversine formula to calculate distance between two lat/lon points
+        Returns distance in km'''
         R = 6371.0  # km
 
         phi1 = math.radians(lat1)
@@ -176,48 +177,70 @@ class APIServer:
                     townData = {}
                     townData['town'] = town
                     townLat, townLon = townsCoordinates[town]
-                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)']
-                    inverseDistance = 0
+                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)', 'PM10 (µg/m3)', 'PM2.5 (µg/m3)']
                     # go through each pollutant
                     for p in pollutants:
+                        inverseDistance = 0
                         # print(f"Processing pollutant {p} for town {town} at row {row}")
+                        # Keep track of pollutant sum
                         pollutantSum = 0
+                        print(f"Processing pollutant {p} ---------------------------------------------------------------")
+
                         # Go through each station available
                         for station in self.stations:
                             # Read the station data 
                             df = pd.read_excel(path, sheet_name=station, na_values=['na'])
-
                             # Clean data frame by handling NAN values, converting data types and grouping by date
+                            # Contains main dataframe for NO2,SO2, and O3, and   a separate dataframe for PM10 and PM2.5
                             df, pm_df = self.__cleanDataFrame(df)
+   
+                        
 
                             # Get date for current row
                             townData['Date'] = df.iloc[row]['Date']
 
 
-
-                            # Get PM10 and PM2.5 values for the town based on the date of the current row
+                            # Get PM10 and PM2.5 values for the town based on the date of the current row and station
                             # Congrats to ERA for not formatting the date in the same way across all stations,
                             # so we have to do this for each station instead of just once per row
 
-                            townData['PM10 (µg/m3)'] = pm_df.loc[pm_df["DatePM"] == townData['Date']]['PM10 (µg/m3)'].iloc[0] 
-                            townData['PM2.5 (µg/m3)'] = pm_df.loc[pm_df["DatePM"]== townData['Date']]['PM2.5 (µg/m3)'].iloc[0] 
-
+                            # Get station coordinates
                             stationLat, stationLon = stationsTownMap[station]['coordinates']
-                            distance = self.__calculate_town_distance(townLat, townLon, stationLat, stationLon)
-                            # print(f"Distance from {town} to station {station} is {distance} km")
 
-                            # print(f"Accessing {row}, pollutant {p}, station {station}")
+                            # Calculated distance from station to current town
+                            distance = round(self.__calculate_town_distance(townLat, townLon, stationLat, stationLon), 2)
+
+
+                            print(f"Distance from {town} to station {station} is {distance} km")
+
+                            print(f"Accessing {row}, pollutant {p}, station {station}")
                             # print(df.iloc[row])
-                            try:
-                                pollutantSum += float(df.iloc[row][p] / distance) if df.iloc[row][p] != 0 else 0
-
+                            
+                            # Check if we are accessing PM10 PM25
+                            if (p == "PM10 (µg/m3)" or p == "PM2.5 (µg/m3)"):
+                                # Access PM10 and PM2.5 rows of the current station and date
+                                print(f"Accessing PM Data for station {station} on {pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0]} µg/m3")
+                                pollutantSum += pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0] / distance
+                                # Average the PM Values
                                 inverseDistance += 1 / distance
-                            except Exception as e:
-                                print(f"Error accessing row {row} for station {station}, pollutant {p}: {e}")
-                        
+              
+
+                            else:
+                                # Average the concentration values from each station for the current pollutant
+                                try:
+                                    pollutantSum += float(df.iloc[row][p] / distance) if df.iloc[row][p] != 0 else 0
+                                    print(f"Pollutant value from station {station} for pollutant {p} is {df.iloc[row][p]} µg/m3, contributing {float(df.iloc[row][p] / distance) if df.iloc[row][p] != 0 else 0} µg/m3 to the town's pollutant sum")
+                                    inverseDistance += 1 / distance
+                                except Exception as e:
+                                    print(f"Error accessing row {row} for station {station}, pollutant {p}: {e}")
+
+
+                        print(f"Total pollutant sum for {p} in town {town} at row {row} is {pollutantSum} with inverse distance sum of {inverseDistance}")
                         townData[p] = math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0
 
                         print(f"Pollutant {p} for town {town} at row {row} is {townData[p]} ")
+
+
 
                     data.append(townData)
                     print(f"Finalized Pollutant Record town:{town} date:{townData['Date']} NO2:{townData['NO2 (µg/m3)']} SO2:{townData['SO2 (µg/m3)']} O3:{townData['O3 (µg/m3)']} PM10:{townData['PM10 (µg/m3)']} PM25:{townData['PM2.5 (µg/m3)']}")
@@ -334,5 +357,5 @@ class APIServer:
 # ================= RUN =================
 
 
-server = APIServer(dbprocessor=True)
+server = APIServer(dbprocessor=False)
 app = server.app

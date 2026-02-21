@@ -3,12 +3,13 @@
 // When a user hovers over a town, we will retrieve the latest pollutant reading
 // to then display it on an overlay box on the town, inplace of the cursor.
 
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, useContext } from "react";
 import axios from "axios";
 import { getTownPollution } from "./Backend/Database_connections";
-import { pollutantDBKeyMap, pollutantNameKeyMap } from "./Backend/PollutantConcentrationLimits";
+import { pollutantDBKeyMap, polAcronymNameMap} from "./Backend/PollutantConcentrationLimits";
 
-
+import RES from  "../Logos/RES.svg";
+import CVD from "../Logos/CVD.svg";
 import '../Stylesheets/townoverview.css';
 import Button from "@mui/material/Button";
 import Box from '@mui/material/Box';
@@ -16,8 +17,29 @@ import Slider from '@mui/material/Slider';
 import { LineChart } from '@mui/x-charts';
 import { display } from "@mui/system";
 import ProgressBar from "./DashboardComponents/ProgressBar";
+import RiskBar from "./DashboardComponents/RiskBar";
+
+ 
 
 export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
+
+
+    // Annual Relative Risks of Mortality for long-term exposure to pollutants CVD 
+    const globalRR_CVD = {
+        "PM25" : 1.13,
+        "PM10" : 1.08,
+        "NO2" : 1.05,
+    }
+
+    // Annual Relative Risks of Mortality for long-term exposure to pollutants Respiratory Disease
+    const globalRR_RES ={
+        "PM25" : 1.14,
+        "PM10" : 1.12,
+        "NO2" : 1.05,
+        "O3": 1.05 
+    }
+
+
 
     // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
@@ -126,7 +148,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
             setPollutantFilter(prev => [...prev.filter(x => pol !== x)])
         }
     }
-
 
     const checkActivePollutant = (pol) =>{
         return pollutantFilter.includes(pol);
@@ -250,38 +271,82 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 
             }
     }, [])
+
+
+    const renderRiskBar = (perc) => {
+        return (
+            <Box sx={{ width: '100%', backgroundColor: '#ddd', borderRadius: '5px' }}>
+                <Box sx={{ width: `${perc}%`, backgroundColor: '#e72a39', height: '20px', borderRadius: '5px' }} />
+            </Box>
+        )
+    }
+    const computeRelativeRisk = (pol, type) => {
+
+        const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;
+
+        // Our counterfactoral concentration will be the pollutant threshold (defined by WHO)
+        const conc_diff = mean - WHOThresholds[pol];
+
+        // Calculate beta coeff based on CRF of pollutant and it's UC (10 ugm^-3)
+        let beta_coef;
+        switch( type ){
+            case "CVD":
+                beta_coef = Math.log(globalRR_CVD[pol]) / 10;
+                break;
+            case "RES":
+                beta_coef = Math.log(globalRR_RES[pol]) / 10;
+                break;
+            default:
+                beta_coef = 0;
+        }
+
+        const result = Math.exp(beta_coef * conc_diff).toFixed(2);
+
+        return <RiskBar title={pol} perc={result}/>
+
+        }
  
 
+    const diseaseOverview = () => {
 
-    return(
-        <>
-            <div 
-                ref={overlayRef} 
-                className={'town-overview'} 
-                style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
-                <h1 >{args.townName}</h1>
-                <button className={"close-btn-overview"} onClick={() => {setArgs(null); setMapActive(true)}}>Close</button>
-                <ul className={'display-options'}>
-                    <li>
-                        <Button onClick={() => setDisplayOption('pollution')} className={displayOption === 'pollution' ? 'disp-opt active' : 'disp-opt'}>Pollution Overview</Button>
-                    </li>
-                    <li>
-                        <Button onClick={() => setDisplayOption('disease')} className={displayOption === 'disease' ? 'disp-opt active' : 'disp-opt'}>Disease Overview</Button>
-                    </li>   
-                </ul>
-                <hr/>
-                <ul className={'pollutant-filters'}>
-                    {pollutants.map((e, index) => 
-                        <li key={index} style={ checkActivePollutant(e) ? {backgroundColor : pollutantColors[e]} : {backgroundColor : "#1f1f1f"}} className={checkActivePollutant(e) ? 'pol-btn active' : 'pol-btn'}>
-                         <Button onClick={() => applyPollutant(e)}>{e}</Button>
-                        </li>
-                    )}
+        return(
+                <div className={"disease-overview"}> 
+                    <h2>Disease Overview</h2>
+                    <hr></hr>
+                    <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.</span>
+                    <div className={"disease-overview-container"}>
+                        <div className={"disease-overview-box"}>
+                            <h3>Respiratory Diseases</h3>
+                            <img className={"disease-logo"} src={RES}></img>
+                            <div className={"disease-overview-value"}>{
+                                Object.keys(globalRR_RES).map(pol => {
+                                    return <div key={pol}>
+                                        {computeRelativeRisk(pol, "CVD")}
+                                        </div>
+                                })
+                                
+                            }</div>
+                        </div>
+                        <div className={"disease-overview-box"}>
+                            <h3>Cardiovascular Diseases</h3>
+                            <img className={"disease-logo"} src={CVD}></img>
+                            <div className={"disease-overview-value"}>{
+                                    Object.keys(globalRR_CVD).map(pol => {
+                                        return <div key={pol}>
+                                            {computeRelativeRisk(pol, "CVD") }
+                                            </div>
+                                    })}</div>
+                        </div>
+                    </div>
+                </div>
+        )
+    }
 
-                </ul>
-
- 
-
-                <div className={'town-overview-details'}>
+    const pollutionOverview = () => {
+    
+        return( 
+            <>
+            <div className={'town-overview-details'}>
 
                 <Box>
                     <LineChart
@@ -341,6 +406,9 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 
                 </div>
                 <div className={"pollution-yearly-avg"}>
+                    <h2>Yearly Average Pollutant Levels</h2>
+                    <hr></hr>
+                    <br></br>
                     <Box className={"pollution-yearly-avg-box"}>
                         {pollutants.map(pol => {        
                             const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;
@@ -349,6 +417,52 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         }
                     </Box>
                 </div>
+                </>
+        )
+    }
+
+    const handleRender = () => {
+        if(displayOption === 'pollution'){
+            return pollutionOverview();
+        } else if (displayOption === 'disease'){
+            return diseaseOverview();
+        }
+    }
+
+
+    return(
+        <>
+            <div 
+                ref={overlayRef} 
+                className={'town-overview'} 
+                style={{position: 'absolute', top: args.yPos, left: args.xPos}}>
+                <h1 >{args.townName}</h1>
+                <button className={"close-btn-overview"} onClick={() => {setArgs(null); setMapActive(true)}}>Close</button>
+                <ul className={'display-options'}>
+                    <li>
+                        <Button onClick={() => setDisplayOption('pollution')} className={displayOption === 'pollution' ? 'disp-opt active' : 'disp-opt'}>Pollution Overview</Button>
+                    </li>
+                    <li>
+                        <Button onClick={() => setDisplayOption('disease')} className={displayOption === 'disease' ? 'disp-opt active' : 'disp-opt'}>Disease Overview</Button>
+                    </li>   
+                </ul>
+                <hr/>
+
+                
+                <ul className={'pollutant-filters'}>
+                    {pollutants.map((e, index) => 
+                        <li key={index} style={ checkActivePollutant(e) ? {backgroundColor : pollutantColors[e]} : {backgroundColor : "#1f1f1f"}} className={checkActivePollutant(e) ? 'pol-btn active' : 'pol-btn'}>
+                         <Button onClick={() => applyPollutant(e)}>{e}</Button>
+                        </li>
+                    )}
+
+                </ul>
+
+                {handleRender()}
+
+ 
+
+
             </div>
         </>
     )
