@@ -3,11 +3,11 @@
 // When a user hovers over a town, we will retrieve the latest pollutant reading
 // to then display it on an overlay box on the town, inplace of the cursor.
 
-import { useCallback, useEffect, useMemo, useState, useRef, useContext } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, useContext, Suspense } from "react";
 import axios from "axios";
 import { getTownPollution } from "./Backend/Database_connections";
 import { pollutantDBKeyMap, polAcronymNameMap} from "./Backend/PollutantConcentrationLimits";
-
+import TownClustering from "./TownClustering";
 import RES from  "../Logos/RES.svg";
 import CVD from "../Logos/CVD.svg";
 import '../Stylesheets/townoverview.css';
@@ -122,9 +122,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
             return
         }
 
-                
         // Retrieve pollutant info on town
-        axios.get(`http://localhost:8000/getPollutantVolTown/?town=${args.townName}`)
+        axios.get(`/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {setPollutants(res.data) 
             processPollutantData()
         }) 
@@ -402,6 +401,10 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                     />
                 </div>
 
+
+                <Suspense fallback={<h2>Loading</h2>}>
+                    <TownClustering pollutant={"NO2"} polTown={args.townName}/>
+                </Suspense>
 
                 
                 </div>

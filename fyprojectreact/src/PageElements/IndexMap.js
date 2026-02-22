@@ -88,11 +88,6 @@ export default function IndexMap() {
   // Request URL. Changes upon filter selection
   const [reqURL, setReqUrl] = useState(null)
 
-
-
-
-
- 
   // Map Access Token
   const MapAccessToken = 'pk.eyJ1Ijoib2hheW9yaW5vIiwiYSI6ImNtZXN1bjd4ODA4d2QyanM4aTBiNm9zN2gifQ.JAp21RU5bHyH5Y0xzdOZvQ';
 

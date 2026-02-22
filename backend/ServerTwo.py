@@ -5,8 +5,15 @@ from datetime import date
 from sqlmodel import SQLModel, Field, Session, create_engine, func, select
 from sqlalchemy import text
 from pydantic import BaseModel
+import numpy as np 
+from collections import Counter
+import calendar
+import datetime
 import logging
 from contextlib import asynccontextmanager
+from sklearn.cluster import KMeans
+
+
 import pandas as pd
 import os
 import time
@@ -32,10 +39,23 @@ class TownsPollutantPayload(BaseModel):
     towns: list[str]
     pollutant: str
 
+class TownPollutantPayload(BaseModel):
+    town: str
+    pollutant: str
+
 # ================= SERVER =================
 
 class APIServer:
     def __init__(self, dbprocessor: bool = False):
+
+        self.pollutantDBKeyMap = {
+                "SO" : "so_ugm3",
+                "NO2" : "no2_ugm3",
+                "PM10" : "pm10_ugm3",
+                "PM25" : "pm25_ugm3",
+                "NO": "no_ugm3",
+                "O" : "o_ugm3"
+            }
 
         # Ensure that the database URL is correctly set.
         self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
@@ -273,7 +293,57 @@ class APIServer:
     SessionDep = Annotated[Session, Depends(get_session)]
 
     def register_routes(self):
-        '''Used to register each individual endpoint for the API server.'''
+        '''Used to register each individual endpoint for the API server.
+            \n **API End Points:**
+            \n */getTownExpPolCluster/* - Clusters records of a town's annual pollutant reading
+
+
+        '''
+
+        @self.app.post("/getTownExpPolCluster/")
+        def cluster_town(load: TownPollutantPayload, session: Session = Depends(self.get_session)):
+           
+            town = load.town
+            pollutant = load.pollutant
+
+
+            # Get column of pollutant
+            col = getattr(Pollutants, self.pollutantDBKeyMap[pollutant])
+
+            # Query for each record of town's pollutant reading.
+            query = (
+                    select(
+                        Pollutants.town,
+                        col,
+                        Pollutants.day
+                    )
+                    .where(Pollutants.town == town)
+                )
+            
+            # Retrieve result
+            result = session.exec(query).all()
+
+            # Present pollutant readings in an array
+            polArray = np.array([[getattr(r, col.key)] for r in result])
+
+            # Present corresponding dates
+            dayArray = np.array([r.day for r in result])
+
+
+            kmeans = KMeans(n_clusters=3, random_state=0, n_init="auto").fit(polArray)
+
+            clusters = list(dict.fromkeys(kmeans.labels_))
+
+            samples = [{"Day" : calendar.month_name[pd.to_datetime(r.day).month], "Value" : getattr(r, col.key), "Cluster" : int(c)} for r,c in zip(result, kmeans.labels_)]
+          
+            clusterGroups = { int(a) : [{"Day" : s["Day"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
+
+
+            return clusterGroups
+
+
+
+            
 
         @self.app.get("/getTown/{id}")
         def get_town(id: int, session: Session = Depends(self.get_session)):
@@ -309,17 +379,8 @@ class APIServer:
             towns = payload.towns
             pollutant = payload.pollutant
 
-            
-            pollutantDBKeyMap = {
-                "SO" : "so_ugm3",
-                "NO2" : "no2_ugm3",
-                "PM10" : "pm10_ugm3",
-                "PM25" : "pm25_ugm3",
-                "NO": "no_ugm3",
-                "O" : "o_ugm3"
-            }
 
-            col = getattr(Pollutants, pollutantDBKeyMap[pollutant])
+            col = getattr(Pollutants, self.pollutantDBKeyMap[pollutant])
             
             query = (
                     select(
