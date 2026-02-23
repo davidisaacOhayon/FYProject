@@ -310,12 +310,12 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
         return(
                 <div className={"disease-overview"}> 
-                    <h2>Disease Overview</h2>
+                    <h2>Disease Mortality Overview</h2>
                     <hr></hr>
                     <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.</span>
                     <div className={"disease-overview-container"}>
                         <div className={"disease-overview-box"}>
-                            <h3>Respiratory Diseases</h3>
+                            <h3>Respiratory Disease Mortality</h3>
                             <img className={"disease-logo"} src={RES}></img>
                             <div className={"disease-overview-value"}>{
                                 Object.keys(globalRR_RES).map(pol => {
@@ -327,7 +327,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                             }</div>
                         </div>
                         <div className={"disease-overview-box"}>
-                            <h3>Cardiovascular Diseases</h3>
+                            <h3>Cardiovascular Disease Mortality</h3>
                             <img className={"disease-logo"} src={CVD}></img>
                             <div className={"disease-overview-value"}>{
                                     Object.keys(globalRR_CVD).map(pol => {

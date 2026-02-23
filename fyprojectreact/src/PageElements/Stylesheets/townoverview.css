@@ -71,7 +71,6 @@
     min-width: 0;
     color: white;
     border-radius: 0;
-    
     text-decoration: none;
 }
 @keyframes overview-intro {
@@ -187,4 +186,21 @@
 .disease-overview-value{
     height: clamp(10vh, 30vh, 40vh);
     width: 50%;
+}
+
+.btn{
+    min-width: 90px;
+    width: clamp(auto, 90px, 100px);
+    background-color: var(--varPolBtn);
+    color: white;
+    border: none;
+    font-size: 15px;
+    height: clamp(auto, 20px, 80px);
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.btn.active{
+    background-color: var(--varPolBtnAct);
 }

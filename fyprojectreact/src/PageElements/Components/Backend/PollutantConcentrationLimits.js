@@ -16,8 +16,7 @@ export const listofPollutants = [
     "NO2",
     "PM10",
     "PM25",
-    "CO2",
-    "NO"
+    "O3"
 ]
 
 export const polAcronymNameMap = {

@@ -54,7 +54,7 @@ class APIServer:
                 "PM10" : "pm10_ugm3",
                 "PM25" : "pm25_ugm3",
                 "NO": "no_ugm3",
-                "O" : "o_ugm3"
+                "O3" : "o_ugm3"
             }
 
         # Ensure that the database URL is correctly set.
@@ -334,12 +334,36 @@ class APIServer:
 
             clusters = list(dict.fromkeys(kmeans.labels_))
 
-            samples = [{"Day" : calendar.month_name[pd.to_datetime(r.day).month], "Value" : getattr(r, col.key), "Cluster" : int(c)} for r,c in zip(result, kmeans.labels_)]
+            print(clusters)
+            samples = [{"Month" : calendar.month_name[pd.to_datetime(r.day).month], "Value" : getattr(r, col.key), "Cluster" : int(c)} for r,c in zip(result, kmeans.labels_)]
           
-            clusterGroups = { int(a) : [{"Day" : s["Day"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
+            clusterGroups = { int(a) : [{"Month" : s["Month"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
+            
+            clusterCounter = {}
 
 
-            return clusterGroups
+            for cluster in clusterGroups.keys():
+                c = {}
+
+                # Get months
+                months = []
+                #  Go through each set in cluster groups
+                for s in clusterGroups[cluster]:
+                    # If the read month isn't recorded
+                    if s["Month"] not in months:
+                        # Add to list
+                        months.append(s["Month"])
+                
+                # Go through each month
+                for month in months:
+                    # Count occurence
+                    c[month[:3]] = sum(1 for d in clusterGroups[cluster] if d["Month"] == month )
+
+
+                clusterCounter[cluster] = c
+
+
+            return clusterCounter
 
 
 
