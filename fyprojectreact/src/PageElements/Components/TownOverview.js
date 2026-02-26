@@ -313,6 +313,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                     <h2>Disease Mortality Overview</h2>
                     <hr></hr>
                     <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.</span>
+                    <br></br>
+                    <h3>Risk Based on Annual Average</h3>
                     <div className={"disease-overview-container"}>
                         <div className={"disease-overview-box"}>
                             <h3>Respiratory Disease Mortality</h3>
@@ -338,6 +340,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         </div>
                     </div>
                 </div>
+                
         )
     }
 

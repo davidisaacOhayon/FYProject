@@ -334,17 +334,18 @@ class APIServer:
 
             clusters = list(dict.fromkeys(kmeans.labels_))
 
-            print(clusters)
             samples = [{"Month" : calendar.month_name[pd.to_datetime(r.day).month], "Value" : getattr(r, col.key), "Cluster" : int(c)} for r,c in zip(result, kmeans.labels_)]
           
             clusterGroups = { int(a) : [{"Month" : s["Month"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
             
             clusterCounter = {}
 
+            clusterresult = {}
 
+            # Process Each Cluster
             for cluster in clusterGroups.keys():
                 c = {}
-
+                coverage = 0
                 # Get months
                 months = []
                 #  Go through each set in cluster groups
@@ -357,10 +358,22 @@ class APIServer:
                 # Go through each month
                 for month in months:
                     # Count occurence
-                    c[month[:3]] = sum(1 for d in clusterGroups[cluster] if d["Month"] == month )
+                    dayCount = sum(1 for d in clusterGroups[cluster] if d["Month"] == month )
+                    print(f"{month} : {dayCount}" )
 
+                    coverage += dayCount
+                    c[month[:3]] = dayCount
+                    
+                minVal = min([s["Value"] for s in clusterGroups[cluster]])
+                maxVal = max([s["Value"] for s in clusterGroups[cluster]])
 
-                clusterCounter[cluster] = c
+                clusterCounter[cluster] = {"min": minVal, "max" : maxVal, "data": c, "coverage" : round((coverage / 365) * 100, 2)}
+
+            # Sort Clusters (low,med,high exposure)
+            clusterCounter = dict(sorted(clusterCounter.items(), key=lambda item: item[1]['max']))
+            # Re-index clusters to order them by exposure level
+            clusterCounter = {i : v for i,v in enumerate(clusterCounter.values())}
+
 
 
             return clusterCounter
