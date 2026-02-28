@@ -4,16 +4,8 @@
 
 
 
-stationsTownMap = {"Msida" : {"coordinates" : [35.895583, 14.493210], "towns": ["Msida", "San Gwann", "Iklin", "Birkirkara", "GharGhur","Pembroke", "St. Julian's","Valletta","Paola","Marsa","Hamrun","Floriana","Pieta", "Santa Venera","Qormi"] },
-            "Zejtun" : {"coordinates": [35.854997, 14.543076], "towns": ["Zejtun", "Zabbar","Kalkara","Ghaxaq","Marsaskala","Birzebbugia","Zurrieq","Luqa","Mqabba","Qrendi","Safi","Marsaxlokk","Kirkop","Gudja","Tarxien","Santa Lucija","Fgura","Bormla","Birgu","Xghajra"] },
-            "Gharb" : {"coordinates": [36.061415, 14.209355], "towns": ["San Lawrenz","Ghasri","Kercem","Zebbug (Gozo)", "Xaghra", "Victoria", "Fontana", "Munxar", "Sannat","Qala","Nadur"]},
-            "Attard" : {"coordinates": [35.890355, 14.433565], "towns": ["Attard", "Naxxar", "Mosta", "Lija", "Rabat", "Mtarfa", "Mdina", "Zebbug"]},
-            "St. Paul's Bay" : {"coordinates": [35.947516, 14.394565], "towns": ["Mellieha", "Mgarr", "St. Paul's Bay"]}
-            }
-
-
 townsCoordinates = {
-    # Gharb Towns (GOZO)
+    // Gharb Towns (GOZO)
     "San Lawrenz": [36.0556, 14.2039],
     "Ghasri": [36.0606, 14.2264],
     "Kercem": [36.0425, 14.2197],
@@ -27,7 +19,7 @@ townsCoordinates = {
     "Nadur": [36.0378, 14.2953],
     "Xewkija": [36.032564, 14.256916],
     "Ghajnsielem": [36.025408, 14.286442],
-    # Attard Towns
+    // Attard Towns
     "Attard": [35.8897, 14.4425],
     "Naxxar": [35.9136, 14.4406],
     "Mosta": [35.9103, 14.4256],
@@ -38,11 +30,11 @@ townsCoordinates = {
     "Zebbug": [35.8719, 14.4411],
     "Balzan" : [35.8984, 14.4521],
     "Dingli" : [35.8600, 14.3797],
-    # St. Paul's Bay Towns
+    //St. Paul's Bay Towns
     "Mellieha": [35.9564, 14.3622],
     "Mgarr": [35.9192, 14.3664],
     "St Paul's Bay": [35.9470, 14.4026],
-    # Zejtun Towns
+    // Zejtun Towns
     "Zejtun": [35.8547, 14.5331],
     "Zabbar": [35.8725, 14.5389],
     "Kalkara": [35.8894, 14.5328],
@@ -64,7 +56,7 @@ townsCoordinates = {
     "Bormla": [35.8875, 14.5222],
     "Birgu": [35.8872, 14.5225],
     "Xghajra": [35.8761, 14.5472],
-    # Msida Towns
+    //Msida Towns
     "Msida": [35.8975, 14.4894],
     "San Gwann": [35.9056, 14.4767],
     "Iklin": [35.9050, 14.4547],

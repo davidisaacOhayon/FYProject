@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef, useContext, Suspense } from "react";
 import axios from "axios";
-import { getTownPollution } from "./Backend/Database_connections";
+import { getTownPollution} from "./Backend/Database_connections";
 import { pollutantDBKeyMap, polAcronymNameMap} from "./Backend/PollutantConcentrationLimits";
 import TownClustering from "./TownClustering";
 import RES from  "../Logos/RES.svg";
@@ -38,8 +38,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         "NO2" : 1.05,
         "O3": 1.05 
     }
-
-
 
     // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
@@ -304,7 +302,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         return <RiskBar title={pol} perc={result}/>
 
         }
- 
+
 
     const diseaseOverview = () => {
 
@@ -430,9 +428,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const handleRender = () => {
         if(displayOption === 'pollution'){
             return pollutionOverview();
-        } else if (displayOption === 'disease'){
-            return diseaseOverview();
-        }
+        } 
     }
 
 

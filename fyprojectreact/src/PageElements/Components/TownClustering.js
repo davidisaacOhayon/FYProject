@@ -67,6 +67,7 @@ export default function TownClustering({polTown}){
 
     const exp = ["Low Exposure", "Medium Exposure", "High Exposure"];
 
+    const expColors = ["#4255FB", "#FFB423", "#FA4F58"];
 
  
 
@@ -78,9 +79,9 @@ export default function TownClustering({polTown}){
 
             <Box>
                 <BarChart
-                
+
                     xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
-                    series={[{label: "Days Of Occurance", data : Object.values(data[page]["data"])}]}
+                    series={[{color: expColors[page], label: "Days Of Occurance", data : Object.values(data[page]["data"])}]}
                     height={300}
                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white
@@ -98,15 +99,14 @@ export default function TownClustering({polTown}){
                     label: exp[key],
                     data: Object.entries(value.data).map(([x, y]) => ({
                         x: x,
-                        y: Number(y),
-                        id: String(y)
+                        y: Number(y)
                     }))
                     }))
                 }
                 xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
                                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white
-                        '.MuiChartsAxis-tick': { stroke: '#fff !important' },       // tick marks white
+                        '.MuiChartsAxis-tick': { stroke: '#b26a6a !important' },       // tick marks white
                         '.MuiChartsAxis-tickLabel': { fill: '#fff !important' },    // tick text white
                         '.MuiChartsLegend-root': { color: '#fff !important' },      // legend white
                         '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
@@ -119,16 +119,16 @@ export default function TownClustering({polTown}){
             </>
         )
     }
-    useEffect(() => {
-        if (data) { 
-            Object.entries(data).map(([key, value]) => {
-                Object.entries(value.data).map(([x,y]) => {
-                    console.log(`{ x : ${x}, y : ${y}}`);
-                })
-            }) 
-        }
+    // useEffect(() => {
+    //     if (data) { 
+    //         Object.entries(data).map(([key, value]) => {
+    //             Object.entries(value.data).map(([x,y]) => {
+    //                 console.log(`{ x : ${x}, y : ${y}}`);
+    //             })
+    //         }) 
+    //     }
 
-    },[data])
+    // },[data])
  
 
     if (data){
@@ -149,7 +149,7 @@ export default function TownClustering({polTown}){
                     return <button className={pol == poll? "btn active" : "btn"} onClick={() => setPol(poll)}>{poll}</button>
                 })}
             </ol>
-            {data != null ? renderPage() : null}
+            {data && renderPage() }
             <h2>Details</h2>
             <hr></hr>
                     {[0,1,2].map((page) => { return (

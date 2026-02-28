@@ -1,8 +1,9 @@
   import { useEffect, useState, useRef, useCallback, useContext, createContext, useMemo} from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
+import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
-
+import { getTownClusters } from './Components/Backend/Database_connections';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
 import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
@@ -16,10 +17,7 @@ const OverlayContext = createContext(null);
 export default function IndexMap() {
 
 
-  useEffect(() => {
-    // Instantiate layers
-    setMapLayers([mapLayers, PollutionRegionlayer, SelectedRegionLayer]);
-  },[])
+
 
 
   const [dashboardActive, setDashboardActive] = useState(false);
@@ -27,23 +25,18 @@ export default function IndexMap() {
   const [mapActive, setMapActive] = useState(true);
   
   // Holds the map layers of Deck.GL. 
-  const [mapLayers, setMapLayers] = useState([])
+  const [mapLayers, setMapLayers] = useState([]);
+
+  // Town Clusters for data heatmap
+  const [townClusters, setTownClusters] = useState(null);
 
   // Contains info of all pollutants we will monitor
   const [pollutants, setPollutants] = useState({
-    "sO2" : { name: "Sulfur Dioxide - SO2", flag : false, col : "#F5E027"},
-    "nO" : { name: "Nitric Oxide - NO", flag : false, col : "#24A3D4"},
-    "pM2" : { name: "PM 2.5", flag : false, col : "#24A3D4"},
-    "pM10" : { name: "PM 10", flag : false, col : "#24A3D4"},
-    "nO2" :{ name: "Nitrogen Dioxide - NO2", flag : false, col : "#24A3D4"},
-    "o3" : { name: "Ozone - O3", flag : false, col : "#24A3D4"}
-  })
-
-  // Contains info of all diseases we will monitor.
-  const [diseases, setDiseases] = useState({
-     "Asth" : { name: "Asthma", flag : false, col : "#F5E027"},
-     "LungC" :{ name: "Lung Cancer", flag : false, col : "#F5E027"},
-     "Pneu" : { name: "Pneumonia", flag : false, col : "#F5E027"}
+    "SO" : { name: "Sulfur Dioxide - SO2", flag : false, col : "#F5E027"},
+    "PM2" : { name: "PM 2.5", flag : false, col : "#24A3D4"},
+    "PM10" : { name: "PM 10", flag : false, col : "#24A3D4"},
+    "NO2" :{ name: "Nitrogen Dioxide - NO2", flag : false, col : "#24A3D4"},
+    "O3" : { name: "Ozone - O3", flag : false, col : "#24A3D4"}
   })
 
   const [views, setViews] = useState({
@@ -57,9 +50,6 @@ export default function IndexMap() {
 
   // Overlay Arguments for town detail upon mouse click for town
   const [overlayArgs, setOverlayArgs] = useState(null);
-
-  // Disease Filter reference
-  const diseaseFilter = useRef(null);
 
   // Pollutant Filter reference
   const pollutantFilter = useRef(null);
@@ -82,12 +72,6 @@ export default function IndexMap() {
   // Keeps track of selected filters
   const [selectedFilter, setFilter] = useState(null);
 
-  // Filter request body. Changes upon filter selection
-  const [filterReqBody, setFilterReqBody] = useState(null);
-
-  // Request URL. Changes upon filter selection
-  const [reqURL, setReqUrl] = useState(null)
-
   // Map Access Token
   const MapAccessToken = 'pk.eyJ1Ijoib2hheW9yaW5vIiwiYSI6ImNtZXN1bjd4ODA4d2QyanM4aTBiNm9zN2gifQ.JAp21RU5bHyH5Y0xzdOZvQ';
 
@@ -103,53 +87,67 @@ export default function IndexMap() {
 
 
   //////// LOGIC FUNCTIONS
- 
 
-  // Adjust filters and prepare request URLS
-  useEffect(() => {
-    if (!pollutants){
+
+
+  const formatClusteredHeatMapData = () => {
+    if (!townClusters){
+      return null;
+    }
+    const data = townClusters.map(cluster => {
+        return {
+          coordinates: cluster[0].coordinates,
+          coverage: cluster[0].coverage
+        }
+    })
+
+    console.log(data);
+
+    return data;
+  }
+
+  const loadHeatMapData = () => {
+
+    const selected = Object.entries(pollutants).find(([key, value]) => value.flag);
+
+    if (!selected){
       return;
     }
+    const pollutantKey = selected[0];
 
-    switch (selectedFilter) {
-      case 'pollutantFilter': {
-        
-        setFilterReqBody(
-        {
-          "nO" : pollutants["nO"].flag,
-          "sO2" : pollutants["sO2"].flag,
-          "pM2" : pollutants["pM2"].flag,
-          "pM10" : pollutants["pM10"].flag,
-          "nO2" : pollutants["nO2"].flag,
-          "o3" : pollutants["o3"].flag
-        }
-      ) 
-        setReqUrl("/getPollutantVol/")
-        break;}
-
-      case 'diseaseFilter': {setFilterReqBody(diseases) 
-        setReqUrl("/getDiseaseVol")
-        break;}
+    axios.get(`http://localhost:8000/getTownExpPolClusters?pollutant=${pollutantKey}`)
+    .then(res => {  setTownClusters(res.data); console.log(res.data)})
+    .finally(() => {
+    })
+    .catch(err => console.log(err.message));
+  }
 
 
 
-      default: break;
+
+
+  useEffect(() => {
+  const layers = [PollutionRegionlayer];
+
+  if (townClusters) {
+    layers.push(HeatMapLayerClustered);
+  }
+
+  if (hoveredTown) {
+    layers.push(SelectedRegionLayer);
+  }
+
+  setMapLayers(layers);
+}, [townClusters, hoveredTown]);
+
+  useEffect(() => {
+    const selectedPol = Object.keys(pollutants).find(key => pollutants[key].flag);
+    if (selectedPol){
+      loadHeatMapData();
     }
-  }, [pollutants, diseases])
-
+  }, [pollutants])
 
   //////// BACKEND COMMUNICATION
-
-  // Once user selects filter, execute post request
-  useEffect(() => {
-
-    if(reqURL && filterReqBody){
-        axios.post(`http://localhost:8000${reqURL}`, filterReqBody)
-        .then(res => console.log(res.data))
-        .catch(err => console.error('API Error:', err))
-    }
-    
-  }, [selectedFilter, reqURL, filterReqBody])
 
 
 
@@ -209,11 +207,15 @@ export default function IndexMap() {
 
   }, [clickEventFilter, clickEventOverlay])
 
-
-
-
   ////////// LAYER VARIABLES & FUNCTIONS
 
+  useEffect(() => {
+    setInterval(() => {
+      console.log(townClusters)
+      console.log(mapLayers);
+    }, 1500);
+    
+  }, [mapLayers])
   // Use Effect to re-render polygons with highlighted red if we are hovering over a town
   useEffect(() => {
     if(!hoveredTown){
@@ -230,15 +232,15 @@ export default function IndexMap() {
     
   }, [hoveredTown])
 
-
-  const EnablePollutionLayer = () => {  
-    if(!mapLayers.includes(PollutionRegionlayer)){
-        mapLayers.push(PollutionRegionlayer);
-    }else {
-      mapLayers.splice( mapLayers.indexOf(PollutionRegionlayer) ,1)
+  // Use Effect to re-render heatmap layer with new data upon pollutant selection
+  useEffect(() => {
+    if (townClusters && townClusters.length > 0) {
+      setMapLayers(prev => {
+        const filtered = prev.filter(layer => layer.id !== 'HeatmapLayer');
+        return [...filtered, HeatMapLayerClustered];
+      });
     }
-  }
-
+  }, [pollutants, townClusters])
   // Text layers to display all Maltese district names
   const DistrictLayer = new TextLayer({
     id: 'TextLayer',
@@ -309,6 +311,15 @@ export default function IndexMap() {
   }); 
 
 
+  // Heat Map Layer for pollutant exposure clusters
+  const HeatMapLayerClustered = new HeatmapLayer({
+    id: 'HeatmapLayerClustered',
+    data: formatClusteredHeatMapData(),
+    getPosition: d => d.coordinates,
+    getWeight: d => d.coverage,
+    radiusPixels: 60,
+  });
+
 
   return (
     <>
@@ -317,14 +328,11 @@ export default function IndexMap() {
         <div className="map-controls">
           <h2 className="filter-title">Filters</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
-          <button onClick={() => setFilter('diseaseFilter')} className={selectedFilter == 'diseaseFilter' ? "map-control-btn active" : "map-control-btn"}>Diseases</button>
           <button onClick={() => setFilter('viewFilter')} className={selectedFilter == 'viewFilter' ? "map-control-btn active" : "map-control-btn"}>Views</button>
           <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Stats Monitor</button>
-          <button className="map-control-btn">Borders</button>
         </div>
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
           {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
-          {selectedFilter == 'diseaseFilter' ? <FilterSelection useRef={diseaseFilter} data={diseases} setData={setDiseases} /> : null}
           {selectedFilter == 'viewFilter' ? <FilterSelection useRef={viewFilter} data={views} setData={setViews} /> : null}
         </div>
       </div>

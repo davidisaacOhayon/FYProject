@@ -12,7 +12,18 @@ export async function getTownPollution(town){
         return null;
     }
 
- 
+}
 
+export async function getTownClusters(pol){
+
+    try {
+        const res = axios.get(`http://localhost:8000/getTownExpPolClusters?pollutant=${pol}`)
+        console.log("Got data")
+        console.log(res)
+        return res.data;
+    } catch ( err ) {
+        console.log(err)
+        return null;
+    }
 
 }

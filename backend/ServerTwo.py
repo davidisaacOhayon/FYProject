@@ -33,6 +33,18 @@ class Pollutants(SQLModel, table=True):
     pm25_ugm3: float | None = None
     day: date | None = None
 
+
+# ================= INTERNAL CLASS MODELS =================
+
+class ClusterTownData():
+    def __init__(self, town, data):
+        self.town: str = town
+        self.data: list = data
+
+
+    def __str__(self):
+        return f"Town: {self.town}, Data: {self.data}"
+
 # ================= PAYLOAD MODELS =================
 
 class TownsPollutantPayload(BaseModel):
@@ -80,7 +92,64 @@ class APIServer:
 
         self.register_routes()
 
+    
+
+    def __cluster_town(self, input):
         
+        _data = input.data
+        _town = input.town
+
+        # Present pollutant readings in an array
+        polArray = np.array([[d["val"]] for d in _data])
+
+        # Fit into clusters with K-means
+        kmeans = KMeans(n_clusters=3, random_state=0, n_init="auto").fit(polArray)
+        
+        clusters = list(dict.fromkeys(kmeans.labels_))
+
+        samples = [{"Month" : r["day"], "Value" : r["val"], "Cluster" : int(c)} for r,c in zip(_data, kmeans.labels_)]
+        
+        clusterGroups = { int(a) : [{"Month" : s["Month"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
+        
+        clusterCounter = {}
+
+        # Process Each Cluster
+        for cluster in clusterGroups.keys():
+            c = {}
+            coverage = 0
+            # Get months
+            months = []
+            #  Go through each set in cluster groups
+            for s in clusterGroups[cluster]:
+                # If the read month isn't recorded
+                if s["Month"] not in months:
+                    # Add to list
+                    months.append(s["Month"])
+            
+            # Go through each month
+            for month in months:
+                # Count occurence
+                dayCount = sum(1 for d in clusterGroups[cluster] if d["Month"] == month )
+                # print(f"{month} : {dayCount}" )
+
+                coverage += dayCount
+                c[month[:3]] = dayCount
+
+            minVal = min([s["Value"] for s in clusterGroups[cluster]])
+            maxVal = max([s["Value"] for s in clusterGroups[cluster]])
+
+            clusterCounter[cluster] = {"min": minVal, "max" : maxVal, "data": c, "coverage" : round((coverage / 365) * 100, 2)}
+
+        # Sort Clusters (low,med,high exposure)
+        clusterCounter = dict(sorted(clusterCounter.items(), key=lambda item: item[1]['max']))
+        # Re-index clusters to order them by exposure level
+        clusterCounter = {i : v for i,v in enumerate(clusterCounter.values())}
+
+        # clusterCounter["coordinates"] = townsCoordinates[_town]
+
+        return clusterCounter
+
+
 
     def __cleanDataFrame(self, df):
 
@@ -300,12 +369,44 @@ class APIServer:
 
         '''
 
+        @self.app.get("/getTownExpPolClusters")
+        def cluster_towns(pollutant: str, session: Session = Depends(self.get_session)):
+            '''Clusters all towns by their yearly pollutant readings and return all cluster counts of all exposure levels.'''
+            
+            # Get column of pollutant
+            col = getattr(Pollutants, self.pollutantDBKeyMap[pollutant])
+
+
+            payload = []
+            # Iterate through each town
+            for town in ["Attard", "Mosta"]:
+                query = (
+                    select(Pollutants.town, col, Pollutants.day)
+                    .where(Pollutants.town == town)
+                )
+                # Retrieve result
+                result = session.exec(query).all()
+
+                tempData = ClusterTownData(town = town, data=[{ "val": getattr(r, col.key), "day": calendar.month_name[pd.to_datetime(r.day).month]} for r in result])
+
+                cluster = self.__cluster_town(tempData)
+                for c in cluster:
+                    cluster[c].pop("data", None)
+                    cluster[c].pop("min", None)
+                    cluster[c].pop("max", None)
+                cluster["coordinates"] = townsCoordinates[town]
+
+                payload.append(cluster)
+
+            return payload
+
+
         @self.app.post("/getTownExpPolCluster/")
         def cluster_town(load: TownPollutantPayload, session: Session = Depends(self.get_session)):
+            '''Clusters yearly pollution reading of town upon specific pollutant and returns cluster counts of all exposure levels.'''
            
             town = load.town
             pollutant = load.pollutant
-
 
             # Get column of pollutant
             col = getattr(Pollutants, self.pollutantDBKeyMap[pollutant])
@@ -323,60 +424,11 @@ class APIServer:
             # Retrieve result
             result = session.exec(query).all()
 
-            # Present pollutant readings in an array
-            polArray = np.array([[getattr(r, col.key)] for r in result])
+            tempData = ClusterTownData(town = town, data= [{ "val": getattr(r, col.key), "day": calendar.month_name[pd.to_datetime(r.day).month]} for r in result])
 
-            # Present corresponding dates
-            dayArray = np.array([r.day for r in result])
+            cluster = self.__cluster_town(tempData)
 
-
-            kmeans = KMeans(n_clusters=3, random_state=0, n_init="auto").fit(polArray)
-
-            clusters = list(dict.fromkeys(kmeans.labels_))
-
-            samples = [{"Month" : calendar.month_name[pd.to_datetime(r.day).month], "Value" : getattr(r, col.key), "Cluster" : int(c)} for r,c in zip(result, kmeans.labels_)]
-          
-            clusterGroups = { int(a) : [{"Month" : s["Month"], "Value" : s["Value"] } for s in samples if a == s["Cluster"] ] for a in clusters }
-            
-            clusterCounter = {}
-
-            clusterresult = {}
-
-            # Process Each Cluster
-            for cluster in clusterGroups.keys():
-                c = {}
-                coverage = 0
-                # Get months
-                months = []
-                #  Go through each set in cluster groups
-                for s in clusterGroups[cluster]:
-                    # If the read month isn't recorded
-                    if s["Month"] not in months:
-                        # Add to list
-                        months.append(s["Month"])
-                
-                # Go through each month
-                for month in months:
-                    # Count occurence
-                    dayCount = sum(1 for d in clusterGroups[cluster] if d["Month"] == month )
-                    print(f"{month} : {dayCount}" )
-
-                    coverage += dayCount
-                    c[month[:3]] = dayCount
-                    
-                minVal = min([s["Value"] for s in clusterGroups[cluster]])
-                maxVal = max([s["Value"] for s in clusterGroups[cluster]])
-
-                clusterCounter[cluster] = {"min": minVal, "max" : maxVal, "data": c, "coverage" : round((coverage / 365) * 100, 2)}
-
-            # Sort Clusters (low,med,high exposure)
-            clusterCounter = dict(sorted(clusterCounter.items(), key=lambda item: item[1]['max']))
-            # Re-index clusters to order them by exposure level
-            clusterCounter = {i : v for i,v in enumerate(clusterCounter.values())}
-
-
-
-            return clusterCounter
+            return cluster
 
 
 
