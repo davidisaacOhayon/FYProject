@@ -269,14 +269,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
             }
     }, [])
 
-
-    const renderRiskBar = (perc) => {
-        return (
-            <Box sx={{ width: '100%', backgroundColor: '#ddd', borderRadius: '5px' }}>
-                <Box sx={{ width: `${perc}%`, backgroundColor: '#e72a39', height: '20px', borderRadius: '5px' }} />
-            </Box>
-        )
-    }
     const computeRelativeRisk = (pol, type) => {
 
         const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;

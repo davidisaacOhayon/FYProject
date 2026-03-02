@@ -56,7 +56,7 @@ townsCoordinates = {
     "Bormla": [35.8875, 14.5222],
     "Birgu": [35.8872, 14.5225],
     "Xghajra": [35.8761, 14.5472],
-    //Msida Towns
+    // Msida Towns
     "Msida": [35.8975, 14.4894],
     "San Gwann": [35.9056, 14.4767],
     "Iklin": [35.9050, 14.4547],

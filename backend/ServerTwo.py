@@ -369,6 +369,65 @@ class APIServer:
 
         '''
 
+
+        @self.app.get("/getTownsReadingsOnDate")
+        def get_town_readings_date(date: date, session: Session = Depends(self.get_session)):
+            '''Returns all towns pollutant readings on a specific date.'''
+            query = select(Pollutants).where(Pollutants.day == date)
+            return session.exec(query).all()
+    
+        @self.app.get("/getEDATownPol")
+        def get_eda_town_pol(town: str, pollutant: str, session: Session = Depends(self.get_session)):
+            '''Returns all records of a town's pollutant readings for EDA purposes.'''
+            
+            # Get column of pollutant
+            col = getattr(Pollutants, self.pollutantDBKeyMap[pollutant])
+
+            query = (
+                    select(
+                        Pollutants.town,
+                        col,
+                        Pollutants.day
+                    )
+                    .where(Pollutants.town == town)
+                )
+            
+            # Retrieve result
+            result = session.exec(query).all()
+
+            # Calculate Standard Deviation
+            values = [getattr(r, col.key) for r in result]
+            if values:
+                std_dev = round(np.std(values), 3)
+            else:
+                std_dev = 0.0
+
+            # Calculate Mean
+            if values:
+                mean = round(np.mean(values), 3)
+            else:                
+                mean = 0.0
+
+            # Calculate Interquartile Range
+            if values:
+                q1 = round(np.percentile(values, 25), 3)
+                q3 = round(np.percentile(values, 75), 3)
+                iqr = round(q3 - q1, 3)
+            else:
+                iqr = 0.0
+
+            # Retrieve Min Max Values
+            if values:
+                min = round(np.min(values), 3)
+                max = round(np.max(values), 3)
+            else:                
+                min = 0.0
+                max = 0.0
+
+            
+            return {"Q1": q1, "Q3": q3, "IQR" : iqr, "Mean": mean, "STD_Dev": std_dev, "Min": min, "Max": max}
+        
+
         @self.app.get("/getTownExpPolClusters")
         def cluster_towns(pollutant: str, session: Session = Depends(self.get_session)):
             '''Clusters all towns by their yearly pollutant readings and return all cluster counts of all exposure levels.'''

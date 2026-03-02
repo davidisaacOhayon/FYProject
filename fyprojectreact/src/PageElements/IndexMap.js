@@ -95,6 +95,7 @@ export default function IndexMap() {
       return null;
     }
     const data = townClusters.map(cluster => {
+        console.log(`Cords: ${cluster[0].coordinates}, Coverage: ${cluster[0].coverage}`);
         return {
           coordinates: cluster[0].coordinates,
           coverage: cluster[0].coverage
@@ -116,7 +117,7 @@ export default function IndexMap() {
     const pollutantKey = selected[0];
 
     axios.get(`http://localhost:8000/getTownExpPolClusters?pollutant=${pollutantKey}`)
-    .then(res => {  setTownClusters(res.data); console.log(res.data)})
+    .then(res => {  setTownClusters(res.data);})
     .finally(() => {
     })
     .catch(err => console.log(err.message));
@@ -209,13 +210,13 @@ export default function IndexMap() {
 
   ////////// LAYER VARIABLES & FUNCTIONS
 
-  useEffect(() => {
-    setInterval(() => {
-      console.log(townClusters)
-      console.log(mapLayers);
-    }, 1500);
+  // useEffect(() => {
+  //   setInterval(() => {
+  //     console.log(townClusters)
+  //     console.log(mapLayers);
+  //   }, 1500);
     
-  }, [mapLayers])
+  // }, [mapLayers])
   // Use Effect to re-render polygons with highlighted red if we are hovering over a town
   useEffect(() => {
     if(!hoveredTown){
@@ -241,6 +242,7 @@ export default function IndexMap() {
       });
     }
   }, [pollutants, townClusters])
+  
   // Text layers to display all Maltese district names
   const DistrictLayer = new TextLayer({
     id: 'TextLayer',
@@ -292,7 +294,7 @@ export default function IndexMap() {
         }
 
         // Set town overlay args with name, and viewport coordinates
-        setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)})
+        setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)});
         setMapActive(false);
       }
     },
