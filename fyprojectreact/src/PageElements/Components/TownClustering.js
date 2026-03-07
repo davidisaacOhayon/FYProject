@@ -35,10 +35,8 @@ export default function TownClustering({polTown}){
         
     });
 
-
     // EDA Data
     const [edaData, setEdaData] = useState(null);
-
 
     const resetMonthData = () => {
         setMonthData({
@@ -75,15 +73,9 @@ export default function TownClustering({polTown}){
     },[polTown, pol]);
 
 
-
-
     const exp = ["Low Exposure", "Medium Exposure", "High Exposure"];
 
     const expColors = ["#4255FB", "#FFB423", "#FA4F58"];
-
- 
-
-
  
     const renderPage = () => {
         return (
@@ -188,7 +180,9 @@ export default function TownClustering({polTown}){
                 <div className={"eda-data-div"}>
                     <h3>Interquartile Range:</h3>
                     <p>{edaData['IQR']}µg/m³</p>
-                    <p>{edaData["Q3"]}µg/m³</p>
+                <p style={{fontSize: "1rem"}}>Q1: {edaData["Q1"]}µg/m³ </p> 
+                <p style={{fontSize: "1rem"}}> Q3: {edaData["Q3"]}µg/m³</p>
+                
                 </div>
             </div>
 

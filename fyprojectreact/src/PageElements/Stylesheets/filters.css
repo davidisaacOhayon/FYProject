@@ -14,6 +14,12 @@
     overflow-y: scroll;
     gap: 10%;
 }
+.filter-selection-list input[type="checkbox"]{
+    width: 20px;
+    height: 20px;
+    accent-color: white;
+    margin: 5px;
+}
 label {
     display: flex;
     justify-content: center;

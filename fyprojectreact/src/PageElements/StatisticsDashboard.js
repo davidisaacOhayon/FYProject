@@ -44,11 +44,11 @@ export default function StatisticsDashboard(){
     const [isLoading, setLoading] = useState(false);
 
     // List down each pollutant key
-    const pollutants = ['SO', 'NO', 'NO2', 'PM25','PM10']
+    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
 
 
     const pollutantColors = {
-        'SO': "#f5d142",
+        'SO2': "#f5d142",
         'NO' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",

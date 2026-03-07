@@ -52,7 +52,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const [displayOption, setDisplayOption] = useState('pollution');
     
     // List down each pollutant key
-    const pollutants = ['SO', 'NO', 'NO2', 'PM25','PM10', 'O'];
+    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3'];
 
     // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
@@ -70,20 +70,20 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const overlayY = useRef(0);
 
     const pollutantColors = {
-        'SO': "#f5d142",
+        'SO2': "#f5d142",
         'NO' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",
         'PM10': '#96000d',
-        'O': "#bf00ff"
+        'O3': "#bf00ff"
     };
     const WHOThresholds = {
-        'SO': 40,
+        'SO2': 40,   
         'NO' : 0.40,
         'NO2': 10,
         'PM25': 5,
         'PM10': 15,
-        'O': 60
+        'O3': 60
     }
 
     const computeAdverseLevel = (pol, avg) => {
@@ -247,8 +247,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     }
 
     useEffect(() => {
-
-
         const el = overlayRef.current;
         if(!el) {return}
 
@@ -271,8 +269,9 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     const computeRelativeRisk = (pol, type) => {
 
+ 
         const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;
-
+       
         // Our counterfactoral concentration will be the pollutant threshold (defined by WHO)
         const conc_diff = mean - WHOThresholds[pol];
 
@@ -281,15 +280,21 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         switch( type ){
             case "CVD":
                 beta_coef = Math.log(globalRR_CVD[pol]) / 10;
+ 
                 break;
             case "RES":
                 beta_coef = Math.log(globalRR_RES[pol]) / 10;
+ 
                 break;
             default:
                 beta_coef = 0;
         }
 
-        const result = Math.exp(beta_coef * conc_diff).toFixed(2);
+        // parse beta as integer
+  
+        const result = Math.exp( (beta_coef * conc_diff) ).toFixed(2);
+
+     
 
         return <RiskBar title={pol} perc={result}/>
 
@@ -312,7 +317,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                             <div className={"disease-overview-value"}>{
                                 Object.keys(globalRR_RES).map(pol => {
                                     return <div key={pol}>
-                                        {computeRelativeRisk(pol, "CVD")}
+                                        {computeRelativeRisk(pol, "RES")}
                                         </div>
                                 })
                                 
@@ -421,6 +426,9 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         if(displayOption === 'pollution'){
             return pollutionOverview();
         } 
+        if (displayOption === 'disease'){
+            return diseaseOverview();
+        }
     }
 
 

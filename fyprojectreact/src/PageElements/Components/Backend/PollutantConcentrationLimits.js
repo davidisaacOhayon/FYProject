@@ -3,7 +3,7 @@
 
 // Limits are in ug/m^3
 export const pollutantLimitsYearly = {
-    "SO" : 40,
+    "SO2" : 40,
     "NO2" : 40,
     "PM10" : 15,
     "PM25" : 5,
@@ -12,7 +12,7 @@ export const pollutantLimitsYearly = {
 }
 // Keywords for pollutants
 export const listofPollutants = [
-    "SO",
+    "SO2",
     "NO2",
     "PM10",
     "PM25",
@@ -37,12 +37,12 @@ export const pollutantNameKeyMap = {
     "o_ugm3" : "Ozone"
 }
 export const pollutantDBKeyMap = {
-    "SO" : "so_ugm3",
+    "SO2" : "so_ugm3",
     "NO2" : "no2_ugm3",
     "PM10" : "pm10_ugm3",
     "PM25" : "pm25_ugm3",
     "NO": "no_ugm3",
-    "O" : "o_ugm3"
+    "O3" : "o_ugm3"
 }
 export const pollutantLimits24Hr = {
     "SO" : 40,
@@ -51,4 +51,18 @@ export const pollutantLimits24Hr = {
     "PM25" : 25,
     "CO2" : 4,
     "O3": 100
+}
+
+
+export const PollutionLevelColorGrade = (pol, lim) => {
+    const weight = (pol / lim) * 100;
+
+    if (weight < 33){
+        return [0, 255, 0, 120]; // Green
+    } else if (weight < 66) {
+        return [255, 255, 0, 120]; // Yellow
+    } else {
+        return [255, 0, 0, 120]; // Red
+    }
+
 }

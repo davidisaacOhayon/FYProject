@@ -61,12 +61,12 @@ class APIServer:
     def __init__(self, dbprocessor: bool = False):
 
         self.pollutantDBKeyMap = {
-                "SO" : "so_ugm3",
+                "SO2" : "so_ugm3",
                 "NO2" : "no2_ugm3",
                 "PM10" : "pm10_ugm3",
                 "PM25" : "pm25_ugm3",
                 "NO": "no_ugm3",
-                "O3" : "o_ugm3"
+                "O" : "o_ugm3"
             }
 
         # Ensure that the database URL is correctly set.
@@ -148,8 +148,6 @@ class APIServer:
         # clusterCounter["coordinates"] = townsCoordinates[_town]
 
         return clusterCounter
-
-
 
     def __cleanDataFrame(self, df):
 
@@ -365,17 +363,17 @@ class APIServer:
         '''Used to register each individual endpoint for the API server.
             \n **API End Points:**
             \n */getTownExpPolCluster/* - Clusters records of a town's annual pollutant reading
-
-
         '''
 
 
         @self.app.get("/getTownsReadingsOnDate")
         def get_town_readings_date(date: date, session: Session = Depends(self.get_session)):
             '''Returns all towns pollutant readings on a specific date.'''
+
+            
             query = select(Pollutants).where(Pollutants.day == date)
             return session.exec(query).all()
-    
+        
         @self.app.get("/getEDATownPol")
         def get_eda_town_pol(town: str, pollutant: str, session: Session = Depends(self.get_session)):
             '''Returns all records of a town's pollutant readings for EDA purposes.'''
@@ -525,6 +523,7 @@ class APIServer:
         ):
             
             towns = payload.towns
+            
             pollutant = payload.pollutant
 
 

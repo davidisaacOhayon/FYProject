@@ -3,59 +3,75 @@ import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
+import {H3ClusterLayer} from '@deck.gl/geo-layers';
+import { ColumnLayer } from '@deck.gl/layers';
 import { getTownClusters } from './Components/Backend/Database_connections';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './Stylesheets/main.css';
 import mData from './Datasets/MaltaRegionsPolygons/MaltaGeoJSON.geojson';
+import townPolygons from './Datasets/MaltaRegionsPolygons/TownPolygonInfo.json';
 import tData from './Datasets/MaltaDistricts.Json';
 import FilterSelection from './Components/Filters/FilterSelection';
 import TownOverview from './Components/TownOverview';
 import StatisticsDashboard from './StatisticsDashboard';
+import { emphasize } from '@mui/material/styles';
+import { townsCoordinates } from './Datasets/TownCoordinates';
+import { PollutionLevelColorGrade, pollutantLimitsYearly } from './Components/Backend/PollutantConcentrationLimits';
+import  Legend  from './Components/Legend.js';
 
 const OverlayContext = createContext(null);
  
 export default function IndexMap() {
-
-
-
+  
 
 
   const [dashboardActive, setDashboardActive] = useState(false);
 
+  ///////////////// LAYER VARIABLES
   const [mapActive, setMapActive] = useState(true);
   
   // Holds the map layers of Deck.GL. 
   const [mapLayers, setMapLayers] = useState([]);
 
-  // Town Clusters for data heatmap
-  const [townClusters, setTownClusters] = useState(null);
+  // Town data for Other town map layers
+  const [townLayerData, setLayerData] = useState(null);
 
-  // Contains info of all pollutants we will monitor
-  const [pollutants, setPollutants] = useState({
-    "SO" : { name: "Sulfur Dioxide - SO2", flag : false, col : "#F5E027"},
-    "PM2" : { name: "PM 2.5", flag : false, col : "#24A3D4"},
-    "PM10" : { name: "PM 10", flag : false, col : "#24A3D4"},
-    "NO2" :{ name: "Nitrogen Dioxide - NO2", flag : false, col : "#24A3D4"},
-    "O3" : { name: "Ozone - O3", flag : false, col : "#24A3D4"}
-  })
+  // Town Text Data for text layers
+  const [townTextData, setTownTextData] = useState(null);
 
-  const [views, setViews] = useState({
-     "Town Overview" : { name: "Town Overview", flag : true, col : "#F5E027"},
-     "Town Columns" :{ name: "Lung Cancer", flag : false, col : "#F5E027"},
-  }
-  )
+  // Toggled town layer
+  const [townLayerToggled, toggleTownLayer] = useState(false);
+
 
   // Current town being hovered
   const [hoveredTown, setHovered] = useState(null);
+
+
+
+  ///////////////// ARGUMENT VARIABLES
+
+  // Town Data for legend when hovered. 
+  const [legendTown, setLegendTown] = useState(null);
+
+  // Contains info of all pollutants we will monitor
+  const [pollutants, setPollutants] = useState({
+    "SO2" : { name: "SO2", flag : false},
+    "PM25" : { name: "PM 2.5", flag : false},
+    "PM10" : { name: "PM 10", flag : false},
+    "NO2" :{ name: "NO2"},
+    "O3" : { name: "O3", flag : false}
+  })
+  // Will be used by the pollutant map to retrieve date recording of data
+  const [mainDate, setDate] = useState("2023-01-01");
+
+  // Will be used by the pollutant map to trigger annual average recording of data
+  const [polAnnum, setPolAnnum] = useState(false);
 
   // Overlay Arguments for town detail upon mouse click for town
   const [overlayArgs, setOverlayArgs] = useState(null);
 
   // Pollutant Filter reference
   const pollutantFilter = useRef(null);
-
-  // View Filter reference
-  const viewFilter = useRef(null);
 
   // Main Deck Component ref
   const deckRef = useRef();
@@ -87,70 +103,90 @@ export default function IndexMap() {
 
 
   //////// LOGIC FUNCTIONS
+  
+  const formatTownMapData = (heatData) => {
+ 
 
-
-
-  const formatClusteredHeatMapData = () => {
-    if (!townClusters){
-      return null;
+    const polKeys = {
+      "SO2" : "so_ugm3",
+      "PM25" : "pm25_ugm3",
+      "PM10" : "pm10_ugm3",
+      "NO2" :"no2_ugm3",
+      "O3" : "o_ugm3"
     }
-    const data = townClusters.map(cluster => {
-        console.log(`Cords: ${cluster[0].coordinates}, Coverage: ${cluster[0].coverage}`);
-        return {
-          coordinates: cluster[0].coordinates,
-          coverage: cluster[0].coverage
-        }
+
+    const pol = Object.keys(pollutants).find(key => pollutants[key].flag == true);
+
+    const data = Object.entries(heatData).map(([key, value]) => {
+        //  console.log(`Formatting data for ${pol} with key ${polKeys[pol]}`)
+         let geo = Object.values(townPolygons).find(feature => feature.properties.plain_name === value.town)?.geometry.coordinates;
+        //  console.log(`Retrieved geometry for ${value.town}: ${geo ? "Found" : "Not Found"}`);
+
+      return {
+        town: value.town,
+        pol: value[polKeys[pol]],
+        coordinates: townsCoordinates[value.town] ?? null ,
+        geometry: geo
+      } 
     })
 
-    console.log(data);
+    
 
     return data;
   }
+  const loadTownMapData = (pol) => { 
 
-  const loadHeatMapData = () => {
+    let data;
+    const date = mainDate;
 
-    const selected = Object.entries(pollutants).find(([key, value]) => value.flag);
+  
+    console.log(`Running request for ${pol} at ${date}`)
 
-    if (!selected){
-      return;
+    // Get average pollutant readings for all towns based yearly
+    if (polAnnum){
+      console.log("Annual average enabled, adjusting request")
+      const date = Date.parse("2023-01-01");
+      const endDate = Date.parse("2023-12-31");
+
+      axios.get(`/getPollutantAvgTowns?&start_date=${date}&end_date=${endDate}&pollutant=${pol}`)
     }
-    const pollutantKey = selected[0];
 
-    axios.get(`http://localhost:8000/getTownExpPolClusters?pollutant=${pollutantKey}`)
-    .then(res => {  setTownClusters(res.data);})
+    // Get pollutant readings for all towns based on date.
+    axios.get(`/getTownsReadingsOnDate?&date=${date}`)
+    .then(res => { 
+      data = res.data;})
     .finally(() => {
+      console.log(data);
+      let formattedData = formatTownMapData(data);
+      console.log(formattedData);
+      setLayerData(formattedData);
     })
     .catch(err => console.log(err.message));
   }
 
 
-
-
-
+  // HOVERED TOWN USE EFFECT HANDLER
   useEffect(() => {
   const layers = [PollutionRegionlayer];
 
-  if (townClusters) {
-    layers.push(HeatMapLayerClustered);
-  }
 
   if (hoveredTown) {
     layers.push(SelectedRegionLayer);
   }
 
   setMapLayers(layers);
-}, [townClusters, hoveredTown]);
+}, [hoveredTown]);
 
+// Use effect to retrieve town app data for town data layers once a pollutant has been selected
   useEffect(() => {
-    const selectedPol = Object.keys(pollutants).find(key => pollutants[key].flag);
-    if (selectedPol){
-      loadHeatMapData();
+
+    // Retrieve selected pollutant key
+    const selectedPol = Object.keys(pollutants).find(key => pollutants[key].flag == true);
+
+    if (selectedPol ){
+      loadTownMapData(selectedPol);
     }
-  }, [pollutants])
-
-  //////// BACKEND COMMUNICATION
-
-
+  }, [pollutants, mainDate])
 
 
   //////// EVENT LISTENERS 
@@ -192,11 +228,8 @@ export default function IndexMap() {
     
   }, [selectedFilter] )
 
-
-
   // Event Listener Initializer
   useEffect(() => {
-
 
     document.addEventListener('click', clickEventFilter)
     // document.addEventListener('click', clickEventOverlay)
@@ -210,39 +243,43 @@ export default function IndexMap() {
 
   ////////// LAYER VARIABLES & FUNCTIONS
 
-  // useEffect(() => {
-  //   setInterval(() => {
-  //     console.log(townClusters)
-  //     console.log(mapLayers);
-  //   }, 1500);
-    
-  // }, [mapLayers])
   // Use Effect to re-render polygons with highlighted red if we are hovering over a town
-  useEffect(() => {
-    if(!hoveredTown){
-      setMapLayers([PollutionRegionlayer]);
-      return;
-    }
+  // useEffect(() => {
+
+  //   let layers = [PollutionRegionlayer];
+
+  //   console.log("I should be running");
+
+  //   if (hoveredTown) {
+  //     SelectedRegionLayer = SelectedRegionLayer.clone({
+  //       data: hoveredTown
+  //     });
+  //     layers.push(SelectedRegionLayer);
+  //   }
+
+  //   if (townLayerToggled){
+
+  //     // Retain column layers if they exist
+  //     if (townLayerData && townLayerData.length > 0) {
+  //       PollutionLevelLayer = PollutionLevelLayer.clone({
+  //         data: townLayerData
+  //       });
+  //       layers.push(PollutionLevelLayer);
+  //     }
+  //   }
+
+
+
+  //   console.log(`Setting new layers to ${layers.map(layer => layer.id)}`)
+  //   // Reset map layers
+  //   setMapLayers(layers);
+
+  // }, [hoveredTown, townLayerData, pollutants, townLayerToggled]);
+
  
-    // Re-make SelectedRegionLayer
-    SelectedRegionLayer = SelectedRegionLayer.clone({
-      data: hoveredTown
-    })
 
-    setMapLayers([PollutionRegionlayer, SelectedRegionLayer])
-    
-  }, [hoveredTown])
+  ///////// LAYER VARIABLES 
 
-  // Use Effect to re-render heatmap layer with new data upon pollutant selection
-  useEffect(() => {
-    if (townClusters && townClusters.length > 0) {
-      setMapLayers(prev => {
-        const filtered = prev.filter(layer => layer.id !== 'HeatmapLayer');
-        return [...filtered, HeatMapLayerClustered];
-      });
-    }
-  }, [pollutants, townClusters])
-  
   // Text layers to display all Maltese district names
   const DistrictLayer = new TextLayer({
     id: 'TextLayer',
@@ -254,8 +291,17 @@ export default function IndexMap() {
 
   });
 
+  // Used by other layers to display info overhead 
+  const InfoTextLayer = new TextLayer({
+    id: 'InfoTextLayer',
+    data: tData|| [],
+    getPosition: d => d.coordinates,
+    getText: d => d.name,
+    getColor: [255, 255, 255],
+    getSize: 16
+  });
 
-  let SelectedRegionLayer = new PolygonLayer({
+  let SelectedRegionLayer = useMemo(() => new PolygonLayer({
     id: "SelectedPolygonLayer",
     data: hoveredTown,
     getPolygon: d => d,
@@ -263,11 +309,11 @@ export default function IndexMap() {
     getFillColor: [179, 2, 64],
     getLineWidth: 10,
     lineWidthMinPixels: 1,
-  })
+  }));
 
   // Polygon layer to overlay all Maltese town
-  const PollutionRegionlayer = new PolygonLayer({
-    id: "PolygonLayer",
+  let PollutionRegionlayer = useMemo(() => new PolygonLayer({
+    id: "PolygonTownLayer",
     data: mData,
     getPolygon : d => d.geometry.coordinates[0][0],
     getLineColor:[255, 255, 255],
@@ -310,32 +356,119 @@ export default function IndexMap() {
       } 
     },
     pickable: true
-  }); 
-
+  }));
 
   // Heat Map Layer for pollutant exposure clusters
-  const HeatMapLayerClustered = new HeatmapLayer({
+  let HeatMapLayerClustered = new HeatmapLayer({
     id: 'HeatmapLayerClustered',
-    data: formatClusteredHeatMapData(),
-    getPosition: d => d.coordinates,
-    getWeight: d => d.coverage,
+    data: townLayerData || [],
+    getPosition: d => [d.coordinates[1], d.coordinates[0]],
+    getWeight: d => d.pol || 0,
     radiusPixels: 60,
   });
+
+  // Hexagon Layer for pollutant exposure clusters
+  let ColumnPollutantLayer = new ColumnLayer({
+  id: 'pollution-columns',
+  data: townLayerData || [],
+
+  diskResolution: 20,
+  radius: 500, // adjust for Malta scale (500–800 works well)
+  extruded: true,
+  elevationScale: 100, // controls height intensity
+
+  getPosition: d => [d.coordinates[1], d.coordinates[0]], // must be [lng, lat]
+  getElevation: d => d.pol || 0,
+
+  getFillColor: d => {
+    const value = d.pol || 0;
+    return value > 40
+      ? [255, 0, 0]
+      : value > 25
+      ? [255, 165, 0]
+      : [0, 128, 255];
+  },
+  pickable: true,
+  onHover: (info, event) => {
+    if (info.object) {
+      const { town, pol } = info.object;
+      const tooltip = `${town}\n${pol.toFixed(2)} µg/m³ ${info.x}, ${info.y}`;
+      // Show tooltip (you can implement your own tooltip logic here)
+      console.log(tooltip);
+      
+    }
+  },
+});
+
+  // Polygon layer for pollutant exposure levels per town
+  let PollutionLevelLayer = useMemo(() => new PolygonLayer({  
+    id: "PolygonLevelLayer",
+    data: townLayerData,
+    getPolygon : d => d.geometry[0][0],
+    getLineColor:[255, 255, 255],
+    getFillColor: d => PollutionLevelColorGrade(d.pol, pollutantLimitsYearly[Object.keys(pollutants).find(key => pollutants[key].flag == true)]),
+    getLineWidth: 10,
+    lineWidthMinPixels: 1,
+    pickable: false,
+    
+  }), [townLayerData, pollutants]); 
+
+
+  let layers = useMemo(() => {
+
+    let baseLayers = [];
+
+    if (PollutionRegionlayer){
+      baseLayers.push(PollutionRegionlayer);
+    }
+
+    if (hoveredTown) {
+      SelectedRegionLayer = SelectedRegionLayer.clone({
+        data: hoveredTown
+      });
+      baseLayers.push(SelectedRegionLayer);
+    }
+
+    if (townLayerToggled){
+
+      // Retain column layers if they exist
+      if (townLayerData && townLayerData.length > 0) {
+        PollutionLevelLayer = PollutionLevelLayer.clone({
+          data: townLayerData
+        });
+        baseLayers.push(PollutionLevelLayer);
+      }
+    }
+
+    return baseLayers;
+
+  }, [PollutionRegionlayer, hoveredTown, townLayerData, pollutants, townLayerToggled])
 
 
   return (
     <>
-    <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={mapLayers}>
+    <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={layers}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
-          <h2 className="filter-title">Filters</h2>
+          <h2 className="filter-title">Controls</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
-          <button onClick={() => setFilter('viewFilter')} className={selectedFilter == 'viewFilter' ? "map-control-btn active" : "map-control-btn"}>Views</button>
-          <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Stats Monitor</button>
+          <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Dashboard</button>
         </div>
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
+          <h2>Pollution Filter</h2>
+          <hr></hr>
           {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
-          {selectedFilter == 'viewFilter' ? <FilterSelection useRef={viewFilter} data={views} setData={setViews} /> : null}
+          <div>
+            <h3>Date Selection:</h3>
+            <input disabled={polAnnum} type="date" id="date" defaultValue={mainDate} onChange={(e) => {
+              setDate(e.target.value)}}></input>
+            <label for={"annum"}> Annual Average:
+            <input type="checkbox" id="annum" name="annum" onChange={(e) => setPolAnnum(e.target.checked)} ></input>
+            </label>
+          </div>
+            <label for={"pollution"}> Pollution Layer:
+              <input placeholder={"Pollution Layer "} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
+            </label>
         </div>
       </div>
 
@@ -343,13 +476,15 @@ export default function IndexMap() {
       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
   
       <Map
-        
         id="MainMap"
         mapStyle="mapbox://styles/ohayorino/cmet1zrt8002r01sc8rfq2fw2"
         mapboxAccessToken={MapAccessToken}
       />
+ 
     </DeckGL>
     {dashboardActive ? <StatisticsDashboard /> : null}
+    {townLayerToggled && <Legend title={"Pollution Level Legend"} lim={pollutantLimitsYearly[Object.keys(pollutants).find(key => pollutants[key].flag == true)]} pol={Object.keys(pollutants).find(key => pollutants[key].flag == true)}/>}
+
     </>
   );
 }

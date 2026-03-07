@@ -4,7 +4,7 @@
 
 
 
-townsCoordinates = {
+export const townsCoordinates = {
     // Gharb Towns (GOZO)
     "San Lawrenz": [36.0556, 14.2039],
     "Ghasri": [36.0606, 14.2264],
@@ -13,7 +13,7 @@ townsCoordinates = {
     "Xaghra": [36.0503, 14.2664],
     "Victoria": [36.0443, 14.2397],
     "Fontana": [36.0369, 14.2369],
-    "Munxar": [36.0294, 14.2522],
+    "Munxar": [36.0294, 14.2290],
     "Sannat": [36.0247, 14.2422],
     "Qala": [36.0356, 14.3097],
     "Nadur": [36.0378, 14.2953],

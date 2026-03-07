@@ -2,7 +2,7 @@ import {react, useState, useEffect} from 'react';
 
 import '../../Stylesheets/filters.css'
 
-export default function FilterssSelection({data, setData}){
+export default function FiltersSelection({data, setData}){
 
 
     const changeData = (id) => {
@@ -11,31 +11,36 @@ export default function FilterssSelection({data, setData}){
 
         // Set all other flags to false but the one that was just clicked
         setData(prev => {
-            const newData = {...prev};
+            let newData = {...prev};
+            
+            // Set all flags to false
             Object.keys(newData).forEach(k => {
                 newData[k].flag = false;
             })
+
             newData[key].flag = !newData[key].flag;
+
             return newData;
         })
     }
 
-    // useEffect(() => {
-    //     Object.entries(data).map((el, index) =>{
-    //         console.log(el);
-    //     })
+    useEffect(() => {
+        Object.entries(data).map((el, index) =>{
+            console.log(el);
+        })
 
-    // },[data])
+    },[data])
 
     return(
         <>
             <ul className={"filter-selection-list"}>
                     {Object.values(data).map((element, index) => 
                         <label>{element["name"]}
-                            <input onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']}type={"checkbox"} value={element['name']}/>
+                            <input onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']} type={"checkbox"} value={element['name']}/>
                         </label>
 
                     )}
+
             </ul>
         </>
     )
