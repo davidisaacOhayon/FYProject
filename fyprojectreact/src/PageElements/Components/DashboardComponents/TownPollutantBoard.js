@@ -9,14 +9,14 @@ export default function TownPollutantBoard(towns) {
 
 
     const WHOThresholds = {
-        'SO': 40,
+        'SO2': 40,
         'NO' : 0.40,
         'NO2': 10,
         'PM25': 5,
         'PM10': 15,
-        'O': 60
+        'O3': 60
     }
-    const [pollutant, setPollutant] = useState("SO");
+    const [pollutant, setPollutant] = useState("SO2");
 
     const [townReadings, setTownReadings] = useState(null);
 
@@ -28,7 +28,7 @@ export default function TownPollutantBoard(towns) {
         }
         console.log("computing" + JSON.stringify(towns["towns"]));
         // Logic to compute highest pollutant holder
-        axios.post(`http://localhost:8000/getPollutantAvgTowns/`, {"towns": towns.towns, "pollutant": pollutant})
+        axios.post(`/getPollutantAvgTowns/`, {"towns": towns.towns, "pollutant": pollutant})
         .then(res => rawData = res.data)
         .then(() => {
             console.log(JSON.stringify(rawData));
@@ -63,29 +63,29 @@ export default function TownPollutantBoard(towns) {
 
                 <div className={"town-pollutant-entries-container"}>
                     <div className={"town-pollutant-entries-section"}>
-                    <div className={"board-pollutant-filter"}>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("SO")}>SO</button>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("NO2")}>NO2</button>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("PM10")}>PM10</button>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("PM25")}>PM2.5</button>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("NO")}>NO</button>
-                        <button className={"pollutant-filter-button"} onClick={() => setPollutant("O")}>O</button>
-                    </div>
-                    <div className={"town-pollutant-entries"}>
-                        <Suspense fallback={<p>Loading...</p>}></Suspense>
-                            {townReadings ? townReadings.map((townEntry) => {
-                                        return(
-                                            <div className={"town-pollutant-entry"}>
-                                                <h3>{townEntry.town} | {computeAdverseLevel(pollutant, townEntry.avg)}</h3>
-                                                <p>{townEntry.avg} µg/m³</p>
-                                            </div>
-                                    )
-                        }) : <p>Loading...</p>}
-                    </div>
+                        <div className={"board-pollutant-filter"}>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("SO2")}>SO2</button>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("NO2")}>NO2</button>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("PM10")}>PM10</button>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("PM25")}>PM2.5</button>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("NO")}>NO</button>
+                            <button className={"pollutant-filter-button"} onClick={() => setPollutant("O3")}>O3</button>
+                        </div>
+                        <div className={"town-pollutant-entries"}>
+                            <Suspense fallback={<p>Loading...</p>}></Suspense>
+                                {townReadings ? townReadings.map((townEntry) => {
+                                            return(
+                                                <div className={"town-pollutant-entry"}>
+                                                    <h3>{townEntry.town} | {computeAdverseLevel(pollutant, townEntry.avg)}</h3>
+                                                    <p>{townEntry.avg} µg/m³</p>
+                                                </div>
+                                        )
+                            }) : <p>Loading...</p>}
+                        </div>
                     </div>
 
                     <div className={"town-pollutant-bar-graph"}>
-                        <p>{pollutant} threshold as declared by WHO: {WHOThresholds[pollutant]} µg/m³</p>
+
                             {townReadings ? 
                             <Box className={"town-pollutant-bar-graph-box"} sx={{ height: '80%', width: '100%' }}>
                             <BarChart
@@ -110,6 +110,7 @@ export default function TownPollutantBoard(towns) {
                                 lineStyle={{ stroke: 'red', strokeWidth: 2, strokeDasharray: '5 5' }} // optional dashed style
                             /></BarChart>  </Box>: <p>Loading...</p>
                             }
+                            <h2>{pollutant} threshold as declared by WHO: {WHOThresholds[pollutant]} µg/m³</h2>
                             
                     </div>
 

@@ -44,7 +44,7 @@ export default function StatisticsDashboard(){
     const [isLoading, setLoading] = useState(false);
 
     // List down each pollutant key
-    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10']
+    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3']
 
 
     const pollutantColors = {
@@ -52,7 +52,8 @@ export default function StatisticsDashboard(){
         'NO' : "#b8c916",
         'NO2': "#1652c9",
         'PM25': "#c92e16",
-        'PM10': '#96000d'
+        'PM10': '#96000d',
+        'O3': "#bf00ff"
     };
     const townNames = [
     "San Lawrenz",
@@ -118,15 +119,9 @@ export default function StatisticsDashboard(){
     "Qormi"
     ];
 
+ 
 
-    // useEffect(() => {
-    //     setLoading(false);
-    // },[globalData])
-
-    useEffect(() => {
-        console.log("loading switched to: " + isLoading);
-        
-    }, [isLoading]);
+ 
 
     useEffect(() => {   
         globalGetPollutantData();
@@ -134,9 +129,6 @@ export default function StatisticsDashboard(){
 
  
     const globalGetPollutantData = () => {
-        
-        
-        // OPTIMIZE THIS STUFF NOW
 
         townFilter.forEach(town => {
             // If global data doesnt contain info on town
@@ -155,40 +147,7 @@ export default function StatisticsDashboard(){
         setTimeout(() => {
             setLoading(false);
         }, 2000);
-      
-
-        
-
-
-        // townFilter.forEach(town => {
-        //     // If global data doesnt contain info on town
-        //     if(!Object.keys(globalData).includes(town)){
-        //         // Retrieve pollutant info on town
-        //         console.log(`Requesting ${town}`)
-        //         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
-        //         .then(res => {processPollutantData(town, res.data)})
-        //         .catch(err => console.log(err.res.data))
-        //         .finally(() => {
-        //             console.log(JSON.stringify(globalData));
-        //             console.log(Object.keys(globalData));
-        //         })
-        //     }
-        // })
-
-        // Object.keys(globalData).forEach(town => {
-        //     if(!townFilter.includes(town)){
-        //         // Retrieve pollutant info on town
-        //         console.log(`Requesting ${town}`)
-        //         axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
-        //         .then(res => {processPollutantData(town, res.data)})
-        //         .catch(err => console.log(err.res.data))
-        //         .finally(() => {
-        //             console.log(JSON.stringify(globalData));
-        //             console.log(Object.keys(globalData));
-        //             setLoading(false);
-        //         })
-        //     }
-        // })
+    
             
         
 
@@ -286,12 +245,7 @@ export default function StatisticsDashboard(){
         }
     }
 
-    // useEffect(() => {
-    //     if (Object.keys(globalData).length === 0){
-    //         return;
-    //     }
-    //     console.log(globalData['Attard']['DisplayData']);
-    // }, [globalData])
+ 
     return(
         <div className={"statistics-monitor-main"}>
             <h1>Statistics Dashboard</h1>
@@ -316,7 +270,6 @@ export default function StatisticsDashboard(){
                     </ul>
                 </div>
                 <div className={'town-dashboards-container'}>
-
                     {isLoading ? <h1>Loading</h1> : townFilter.map((town) => {
                         console.log(`Rendering dashboard for ${town} at loading ${isLoading}`);
                         return <TownOverviewDashboard  town={town} data={globalData[town]["DisplayData"]} dateData={globalData[town]["YearlyData"]}/>

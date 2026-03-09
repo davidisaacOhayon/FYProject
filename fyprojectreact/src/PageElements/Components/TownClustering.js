@@ -17,7 +17,6 @@ export default function TownClustering({polTown}){
 
     const [data, setData] = useState(null);
 
-    const [loading, setLoading] = useState(true);
 
     const [monthData, setMonthData] = useState({
         "Jan": 0,
@@ -85,9 +84,9 @@ export default function TownClustering({polTown}){
                 <BarChart
 
                     xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
-                    series={[{color: expColors[page], label: "Days Of Occurance", data : Object.values(data[page]["data"])}]}
+                    series={[{color: expColors[page], label: "Days Of Occurance", data : Object.values(data[page]["data"]), valueFormatter : (val) => `${val} days of ${exp[page]}`}]}
                     height={300}
-                    valueformatter={(val) => `${val} days`}
+
                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white
                         '.MuiChartsAxis-tick': { stroke: '#fff !important' },       // tick marks white

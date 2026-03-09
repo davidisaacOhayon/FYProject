@@ -44,6 +44,7 @@ export const pollutantDBKeyMap = {
     "NO": "no_ugm3",
     "O3" : "o_ugm3"
 }
+
 export const pollutantLimits24Hr = {
     "SO" : 40,
     "NO2" : 25,

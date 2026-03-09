@@ -167,5 +167,6 @@
 .town-pollutant-bar-graph{
     width: 50%;
     height: clamp(25vh, 80vh, 70vh);
+    padding: 50px;
     background-color: #1c1c1c;
 }

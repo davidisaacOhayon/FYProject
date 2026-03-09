@@ -66,7 +66,7 @@ class APIServer:
                 "PM10" : "pm10_ugm3",
                 "PM25" : "pm25_ugm3",
                 "NO": "no_ugm3",
-                "O" : "o_ugm3"
+                "O3" : "o_ugm3"
             }
 
         # Ensure that the database URL is correctly set.
@@ -227,7 +227,6 @@ class APIServer:
             match(ext):
                 case ".xlsx": self.__handleXLSXFile(os.path.join(self.dirPath, file))
                 case _: print("Invalid Dataset file found, skipping")
-
 
     def __getUsableDatasetLength(self, path):
         lengths = []
@@ -489,8 +488,6 @@ class APIServer:
 
 
 
-            
-
         @self.app.get("/getTown/{id}")
         def get_town(id: int, session: Session = Depends(self.get_session)):
             row = session.get(Pollutants, id)
@@ -513,17 +510,19 @@ class APIServer:
                 query = query.where(Pollutants.day <= end_date)
 
             return session.exec(query.order_by(Pollutants.day)).all()
+        
 
         @self.app.post("/getPollutantAvgTowns/")
-        def get_pollutants_avg_towns(
+        def get_pollutant_avg_towns(
             payload: TownsPollutantPayload,
             start_date: date | None = None,
             end_date: date | None = None,
             session: Session = Depends(self.get_session),
         ):
+            '''Gets all Pollutant averages of selected towns.'''
             
             towns = payload.towns
-            
+
             pollutant = payload.pollutant
 
 
@@ -561,6 +560,14 @@ class APIServer:
 
             return session.exec(query.order_by(Pollutants.day)).all()
 
+
+        @self.app.get("/getAvailableTownNames")
+        def get_available_towns(session: Session = Depends(self.get_session)):
+
+            query = select(Pollutants.town).distinct()
+            return session.exec(query).all()
+
+      
 
 # ================= RUN =================
 

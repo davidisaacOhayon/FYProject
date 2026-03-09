@@ -127,14 +127,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         }) 
         .catch(err => console.log(err.res.data))
         
-        // loadPollutantsDataset();
-       
-        
-        // Retrieve town pollution data of previous month.
-        // Go over latest mean reading of pollutant concentrations
-        // Compare readings with conventional tolerant limits
-        // Correspond any excess concentrations with respective diseases.
-        // If there are no excesses, return that town is in a 'healthy' state
 
     },[args, pollutantFilter, monthRange])
 
@@ -290,7 +282,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                 beta_coef = 0;
         }
 
-        // parse beta as integer
   
         const result = Math.exp( (beta_coef * conc_diff) ).toFixed(2);
 
@@ -299,15 +290,16 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         return <RiskBar title={pol} perc={result}/>
 
         }
-
-
+        
     const diseaseOverview = () => {
 
         return(
                 <div className={"disease-overview"}> 
                     <h2>Disease Mortality Overview</h2>
                     <hr></hr>
-                    <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.</span>
+                    <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.
+                        The Relative Risks have been calculated using CRFs provided by the <a href={"https://www.who.int/publications/i/item/9789289062633"}>HRAPIE-2 Project</a> WHO.  
+                    </span>
                     <br></br>
                     <h3>Risk Based on Annual Average</h3>
                     <div className={"disease-overview-container"}>
@@ -333,7 +325,9 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                                             </div>
                                     })}</div>
                         </div>
+                        
                     </div>
+                    
                 </div>
                 
         )
