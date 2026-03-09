@@ -5,7 +5,7 @@ import {useState, useEffect, Suspense} from 'react';
 import TownPollutantBoard from './Components/DashboardComponents/TownPollutantBoard';
 import axios from 'axios';
 import TownOverviewDashboard from './Components/DashboardComponents/TownOverviewDashboard';
-import { pollutantDBKeyMap } from './Components/Backend/PollutantConcentrationLimits';
+import { pollutantDBKeyMap, pollutantColors } from './Components/Backend/PollutantConcentrationLimits';
 import Slider from '@mui/material/Slider';
 // TO DO FOR LATE STAGE:
 // OPTIMIZE YEARLYDATA AS EACH TOWN IS BEING GIVEN THEIR OWN YEARLY DATA OBJECT, COULD BE
@@ -46,15 +46,6 @@ export default function StatisticsDashboard(){
     // List down each pollutant key
     const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3']
 
-
-    const pollutantColors = {
-        'SO2': "#f5d142",
-        'NO' : "#b8c916",
-        'NO2': "#1652c9",
-        'PM25': "#c92e16",
-        'PM10': '#96000d',
-        'O3': "#bf00ff"
-    };
     const townNames = [
     "San Lawrenz",
     "Ghasri",
@@ -122,25 +113,25 @@ export default function StatisticsDashboard(){
  
 
  
+    useEffect( () => {   
+        const mainLoader = async () => {
+            await globalGetPollutantData();
+        }
 
-    useEffect(() => {   
-        globalGetPollutantData();
+        mainLoader();
+        
     }, [townFilter, pollutantFilter, monthRange]);
 
  
-    const globalGetPollutantData = () => {
+    const globalGetPollutantData =  async () => {
 
         townFilter.forEach(town => {
-            // If global data doesnt contain info on town
             // Retrieve pollutant info on town
             console.log(`Requesting ${town}`)
             axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
             .then(res => {processPollutantData(town, res.data)})
             .catch(err => console.log(err.res.data))
-            // .finally(() => {
-            //     console.log(JSON.stringify(globalData));
-            //     console.log(Object.keys(globalData));
-            // })
+ 
         })
         
 
@@ -264,7 +255,7 @@ export default function StatisticsDashboard(){
                     <ul className={'dashboard-town-filter'}>
                     {townNames.map((e, index) => 
                         <li key={index}  className={checkActiveTown(e) ? 'dsh-city-btn active' : 'dsh-city-btn'}>
-                            <button onClick={() => { applyTown(e);} }>{e}</button>
+                            <button disabled={isLoading} onClick={() => { applyTown(e);} }>{e}</button>
                         </li>
                     )}
                     </ul>
@@ -299,7 +290,7 @@ export default function StatisticsDashboard(){
                     />
                 </div>
 
-
+            
             {townFilter.length != 0 && !isLoading ? <TownPollutantBoard towns={townFilter}/> : null}
 
 

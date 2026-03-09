@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef, useContext, Suspense } from "react";
 import axios from "axios";
 import { getTownPollution} from "./Backend/Database_connections";
-import { pollutantDBKeyMap, polAcronymNameMap} from "./Backend/PollutantConcentrationLimits";
+import { pollutantDBKeyMap, polAcronymNameMap, pollutantColors} from "./Backend/PollutantConcentrationLimits";
 import TownClustering from "./TownClustering";
 import RES from  "../Logos/RES.svg";
 import CVD from "../Logos/CVD.svg";
@@ -69,14 +69,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const overlayX = useRef(0);
     const overlayY = useRef(0);
 
-    const pollutantColors = {
-        'SO2': "#f5d142",
-        'NO' : "#b8c916",
-        'NO2': "#1652c9",
-        'PM25': "#c92e16",
-        'PM10': '#96000d',
-        'O3': "#bf00ff"
-    };
     const WHOThresholds = {
         'SO2': 40,   
         'NO' : 0.40,
@@ -340,12 +332,14 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
             <div className={'town-overview-details'}>
 
                 <Box>
+                    {/* µg/m³ */}
                     <LineChart
                     xAxis={[
                         {
                         data: dateData !== null ? dateData : [],
                         scaleType: 'time',      
                         zoom: true,
+                        name: "Day",
                         valueFormatter: (date) => {
                             const month = date.getMonth();
                             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -356,8 +350,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                     series={[
                         ...displayData !== null ? displayData.map( d => (
                             d
-                        )) : []
-                    ]}
+                        )) : []]}
+                        
                     height={300}
                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white

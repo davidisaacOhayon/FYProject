@@ -84,7 +84,7 @@ export default function TownClustering({polTown}){
                 <BarChart
 
                     xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
-                    series={[{color: expColors[page], label: "Days Of Occurance", data : Object.values(data[page]["data"]), valueFormatter : (val) => `${val} days of ${exp[page]}`}]}
+                    series={[{color: expColors[page],name: "Days" , label: "Days Of Occurance", data : Object.values(data[page]["data"]), valueFormatter : (val) => `${val} days of ${exp[page]}`}]}
                     height={300}
 
                     sx={{
@@ -123,16 +123,7 @@ export default function TownClustering({polTown}){
             </>
         )
     }
-    // useEffect(() => {
-    //     if (data) { 
-    //         Object.entries(data).map(([key, value]) => {
-    //             Object.entries(value.data).map(([x,y]) => {
-    //                 console.log(`{ x : ${x}, y : ${y}}`);
-    //             })
-    //         }) 
-    //     }
-
-    // },[data])
+ 
  
 
     if (data){

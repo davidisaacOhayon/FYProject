@@ -12,7 +12,8 @@
     padding: 25px;
     width: auto;
     height:  auto;
-    min-width: 50vw; 
+    min-width: 60vw; 
+    max-width: 60vw;
     min-height: 30vh;
     max-height: 80vh;
     overflow-y: scroll;
@@ -186,12 +187,24 @@
 .disease-overview-value{
     height: clamp(10vh, 30vh, 40vh);
     width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     flex-wrap: wrap;
     flex-direction: column;
     gap: 15px;
 }
-
+.risk-div{
+    display: flex;
+    background-color: rgb(15, 15, 15);
+    height: clamp(50px, 70px, 90px);
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+    gap: 10%;  
+}
+.risk-div h1{
+    font-size: clamp(0px, 40px, 60px);
+}
 .btn{
     min-width: 90px;
     width: clamp(auto, 90px, 100px);

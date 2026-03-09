@@ -97,6 +97,7 @@
     color: rgba(255, 46, 46, 0.777);
     font-weight: 700;
 }
+
 .town-indicator{
     position: relative;
     width: clamp(10px, 5vw, 20px);
@@ -112,7 +113,7 @@
 .town-dashboards-container{
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     gap: clamp(2%, 4%, 5%);
     margin: 20px;

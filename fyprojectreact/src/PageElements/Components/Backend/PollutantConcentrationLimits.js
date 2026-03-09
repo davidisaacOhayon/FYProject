@@ -1,5 +1,14 @@
 
 
+// Used for Graph / Interface coloring associated with pollutant
+export const pollutantColors = {
+    'SO2': "#f5d142",
+    'NO' : "#b8c916",
+    'NO2': "#1652c9",
+    'PM25': "#c92e16",
+    'PM10': '#96000d',
+    'O3': "#bf00ff"
+};
 
 // Limits are in ug/m^3
 export const pollutantLimitsYearly = {
@@ -18,6 +27,7 @@ export const listofPollutants = [
     "PM25",
     "O3"
 ]
+
 
 export const polAcronymNameMap = {
     "SO2" : "Sulfur Dioxide",
