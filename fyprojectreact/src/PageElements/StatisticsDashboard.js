@@ -5,7 +5,7 @@ import {useState, useEffect, Suspense} from 'react';
 import TownPollutantBoard from './Components/DashboardComponents/TownPollutantBoard';
 import axios from 'axios';
 import TownOverviewDashboard from './Components/DashboardComponents/TownOverviewDashboard';
-import { pollutantDBKeyMap, pollutantColors } from './Components/Backend/PollutantConcentrationLimits';
+import { pollutantDBKeyMap, pollutantColors} from './Components/Backend/PollutionInfo';
 import Slider from '@mui/material/Slider';
 // TO DO FOR LATE STAGE:
 // OPTIMIZE YEARLYDATA AS EACH TOWN IS BEING GIVEN THEIR OWN YEARLY DATA OBJECT, COULD BE
@@ -128,7 +128,7 @@ export default function StatisticsDashboard(){
         townFilter.forEach(town => {
             // Retrieve pollutant info on town
             console.log(`Requesting ${town}`)
-            axios.get(`http://localhost:8000/getPollutantVolTown/?town=${town}`)
+            axios.get(`/getPollutantVolTown/?town=${town}`)
             .then(res => {processPollutantData(town, res.data)})
             .catch(err => console.log(err.res.data))
  

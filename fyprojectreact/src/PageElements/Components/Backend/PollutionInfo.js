@@ -11,7 +11,7 @@ export const pollutantColors = {
 };
 
 // Limits are in ug/m^3
-export const pollutantLimitsYearly = {
+export const WHOThresholds = {
     "SO2" : 40,
     "NO2" : 40,
     "PM10" : 15,
@@ -27,6 +27,42 @@ export const listofPollutants = [
     "PM25",
     "O3"
 ]
+
+// Relative Risks sourced by HRAPIE-2 (WHO)
+
+// Chronic Obstructive Pulmonary Disease (COPD)
+export const COPD_RR = {
+    "PM25" : 1.14,
+    "PM10" : 1.22,
+    "NO2" : 1.04
+}
+// Lung Cancer
+export const LUNGC_RR = {
+    "PM25" : 1.09,
+    "PM10" : 1.10,
+    "NO2" : 1.07
+}
+// Ischemic Heart Disease
+export const IHD_RR = {
+    "PM25" : 1.14,
+    "PM10" : 1.06,
+    "NO2" : 1.05
+}
+
+// Annual Relative Risks of Mortality for long-term exposure to pollutants CVD 
+export const globalRR_CVD = {
+        "PM25" : 1.13,
+        "PM10" : 1.08,
+        "NO2" : 1.05,
+    }
+
+// Annual Relative Risks of Mortality for long-term exposure to pollutants Respiratory Disease
+export const globalRR_RES ={
+        "PM25" : 1.14,
+        "PM10" : 1.12,
+        "NO2" : 1.05,
+        "O3": 1.05 
+    }
 
 
 export const polAcronymNameMap = {

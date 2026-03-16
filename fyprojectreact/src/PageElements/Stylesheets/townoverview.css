@@ -4,6 +4,9 @@
     --varPolBtnAct: #db7e0e;
 }
 
+ 
+
+
 .town-overview{
     cursor:move;
     color: white;
@@ -220,4 +223,32 @@
 }
 .btn.active{
     background-color: var(--varPolBtnAct);
+}
+.disease-table{
+    width: 100%;
+    height: auto;
+    color: white;
+    background-color: #1f1f1f;
+    padding: 10px;
+}
+.disease-table table{
+    width: 100%;
+    height: auto;
+    min-height: clamp(20vh, 30vh, 40vh);
+}
+
+.disease-table table, th, td{
+    border: 1px white solid;
+} 
+
+.disease-overview-explanation{
+    background-color: #1f1f1f;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+}
+.guideline-table{
+    width: 95%;
+    height: 20vh;
+    margin: 20px;
 }

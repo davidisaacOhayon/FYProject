@@ -1,4 +1,4 @@
-  import { useEffect, useState, useRef, useCallback, useContext, createContext, useMemo} from 'react';
+  import { Suspense, useEffect, useState, useRef, useCallback, useContext, createContext, useMemo} from 'react';
 import Map from 'react-map-gl/mapbox';
 import axios from 'axios';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
@@ -16,7 +16,7 @@ import TownOverview from './Components/TownOverview';
 import StatisticsDashboard from './StatisticsDashboard';
 import { emphasize } from '@mui/material/styles';
 import { townsCoordinates } from './Datasets/TownCoordinates';
-import { PollutionLevelColorGrade, pollutantLimitsYearly, pollutantDBKeyMap } from './Components/Backend/PollutantConcentrationLimits';
+import { PollutionLevelColorGrade, WHOThresholds, pollutantDBKeyMap } from './Components/Backend/PollutionInfo.js';
 import  Legend  from './Components/Legend.js';
 import PollutionMap from './Components/Layers/PollutionMap.js';
 import AnnualPollutionMap from './Components/Layers/AnnualPollutionMap.js';
@@ -292,10 +292,10 @@ export default function IndexMap() {
   // Polygon layer for pollutant exposure levels per town
   let PollutionLevelLayer = useMemo(() => new PolygonLayer({  
     id: "PolygonLevelLayer",
-    data: townLayerData,
-    getPolygon : d => d.geometry[0][0],
+    data: townLayerData !== null ? townLayerData : null ,
+    getPolygon : d => {console.log(d); return d.geometry[0][0]},
     getLineColor:[255, 255, 255],
-    getFillColor: d => PollutionLevelColorGrade(d.pol, pollutantLimitsYearly[Object.keys(pollutants).find(key => pollutants[key].flag == true)]),
+    getFillColor: d => PollutionLevelColorGrade(d.pol, WHOThresholds[Object.keys(pollutants).find(key => pollutants[key].flag == true)]),
     getLineWidth: 10,
     lineWidthMinPixels: 1,
     pickable: false,
@@ -303,7 +303,21 @@ export default function IndexMap() {
   }), [townLayerData, pollutants]); 
 
 
+
+
+  let hoverLayer = useMemo(() => {
+
+      if (hoveredTown) {
+      SelectedRegionLayer = SelectedRegionLayer.clone({
+        data: hoveredTown
+      });
+      return SelectedRegionLayer;
+    }
+
+  },[hoveredTown])
+
   let layers = useMemo(() => {
+
 
     let baseLayers = [];
 
@@ -311,19 +325,17 @@ export default function IndexMap() {
       baseLayers.push(PollutionRegionlayer);
     }
 
-    if (hoveredTown) {
-      SelectedRegionLayer = SelectedRegionLayer.clone({
-        data: hoveredTown
-      });
-      baseLayers.push(SelectedRegionLayer);
-    }
+
 
     if (townLayerToggled){
 
       // Retain column layers if they exist
       if (townLayerData && townLayerData.length > 0) {
+        
+        console.log("Town layer Data should not be empty at this point.");
+        console.log(Object.values(townLayerData));
         PollutionLevelLayer = PollutionLevelLayer.clone({
-          data: townLayerData
+          data: Object.values(townLayerData)
         });
         baseLayers.push(PollutionLevelLayer);
       }
@@ -331,12 +343,23 @@ export default function IndexMap() {
 
     return baseLayers;
 
-  }, [PollutionRegionlayer, hoveredTown, townLayerData, pollutants, townLayerToggled])
+  }, [PollutionRegionlayer, townLayerData, pollutants, townLayerToggled])
 
+
+  // useEffect(() => { 
+  //   if (townLayerToggled){
+  //     console.log("Town layer is toggled")
+  //   }else {
+  //     console.log("town layer is untoggled")
+  //   }
+  //   setInterval(() => {
+  //     console.log(layers)
+  //   }, [2000])
+  // }, [layers, townLayerToggled])
 
   return (
     <>
-    <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={layers}>
+    <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={[layers, hoverLayer]}>
       <div ref={filterOptions} className={"map-controls-div"}>
         <div className="map-controls">
           <h2 className="filter-title">Controls</h2>
@@ -361,9 +384,9 @@ export default function IndexMap() {
         </div>
       </div>
 
- 
-      {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
-  
+      <Suspense fallback={<p>Loading...</p>}>
+       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
+      </Suspense>
       <Map
         id="MainMap"
         mapStyle="mapbox://styles/ohayorino/cmet1zrt8002r01sc8rfq2fw2"
@@ -372,7 +395,7 @@ export default function IndexMap() {
  
     </DeckGL>
     {dashboardActive ? <StatisticsDashboard /> : null}
-    {townLayerToggled && <Legend title={"Pollution Level Legend"} lim={pollutantLimitsYearly[Object.keys(pollutants).find(key => pollutants[key].flag == true)]} pol={Object.keys(pollutants).find(key => pollutants[key].flag == true)}/>}
+    {townLayerToggled && <Legend title={"Pollution Level Legend"} lim={WHOThresholds[Object.keys(pollutants).find(key => pollutants[key].flag == true)]} pol={Object.keys(pollutants).find(key => pollutants[key].flag == true)}/>}
 
     </>
   );

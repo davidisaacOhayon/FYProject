@@ -2,20 +2,13 @@ import {useEffect, useState, Suspense} from 'react';
 import axios from 'axios';
 import { BarChart} from '@mui/x-charts';
 import { ChartsReferenceLine } from '@mui/x-charts/ChartsReferenceLine';
+import { WHOThresholds } from '../Backend/PollutionInfo';
 import Box from "@mui/material/Box";
 
 
 export default function TownPollutantBoard(towns) {
 
 
-    const WHOThresholds = {
-        'SO2': 40,
-        'NO' : 0.40,
-        'NO2': 10,
-        'PM25': 5,
-        'PM10': 15,
-        'O3': 60
-    }
     const [pollutant, setPollutant] = useState("SO2");
 
     const [townReadings, setTownReadings] = useState(null);

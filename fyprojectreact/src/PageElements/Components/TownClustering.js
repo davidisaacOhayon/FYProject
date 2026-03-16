@@ -2,7 +2,7 @@ import axios from 'axios';
 import Box from '@mui/material/Box';
 import { BarChart, LineChart, ScatterChart } from '@mui/x-charts';
 import {useEffect, useState} from 'react';
-import { listofPollutants } from './Backend/PollutantConcentrationLimits';
+import { listofPollutants } from './Backend/PollutionInfo';
 import '../Stylesheets/townclustering.css';
 
 export default function TownClustering({polTown}){
@@ -82,7 +82,6 @@ export default function TownClustering({polTown}){
 
             <Box>
                 <BarChart
-
                     xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
                     series={[{color: expColors[page],name: "Days" , label: "Days Of Occurance", data : Object.values(data[page]["data"]), valueFormatter : (val) => `${val} days of ${exp[page]}`}]}
                     height={300}

@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef, useContext, Suspense } from "react";
 import axios from "axios";
 import { getTownPollution} from "./Backend/Database_connections";
-import { pollutantDBKeyMap, polAcronymNameMap, pollutantColors} from "./Backend/PollutantConcentrationLimits";
+import { pollutantDBKeyMap, polAcronymNameMap, pollutantColors, WHOThresholds, IHD_RR, COPD_RR, LUNGC_RR, globalRR_CVD, globalRR_RES} from "./Backend/PollutionInfo";
 import TownClustering from "./TownClustering";
 import RES from  "../Logos/RES.svg";
 import CVD from "../Logos/CVD.svg";
@@ -16,7 +16,8 @@ import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
 import { LineChart } from '@mui/x-charts';
 import { display } from "@mui/system";
-import ProgressBar from "./DashboardComponents/ProgressBar";
+import ProgressBar from "./ProgressBar/ProgressBar";
+import katex from 'katex';
 import RiskBar from "./DashboardComponents/RiskBar";
 
  
@@ -24,20 +25,7 @@ import RiskBar from "./DashboardComponents/RiskBar";
 export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
 
-    // Annual Relative Risks of Mortality for long-term exposure to pollutants CVD 
-    const globalRR_CVD = {
-        "PM25" : 1.13,
-        "PM10" : 1.08,
-        "NO2" : 1.05,
-    }
 
-    // Annual Relative Risks of Mortality for long-term exposure to pollutants Respiratory Disease
-    const globalRR_RES ={
-        "PM25" : 1.14,
-        "PM10" : 1.12,
-        "NO2" : 1.05,
-        "O3": 1.05 
-    }
 
     // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
@@ -57,9 +45,14 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
 
-    // Retains all possible years of data collected
+    // Retains all data records of current year collected
     const [dateData, setDateData] = useState(null);
 
+    // Retains calculated risks 
+    const [riskData, setRiskData] = useState(null);
+
+    // Pollutant averages
+    const [polAverages, setPolAverages] = useState(null);
 
 
     let newX = 0, newY = 0;
@@ -69,14 +62,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const overlayX = useRef(0);
     const overlayY = useRef(0);
 
-    const WHOThresholds = {
-        'SO2': 40,   
-        'NO' : 0.40,
-        'NO2': 10,
-        'PM25': 5,
-        'PM10': 15,
-        'O3': 60
-    }
+ 
 
     const computeAdverseLevel = (pol, avg) => {
         const threshold = WHOThresholds[pol] / 3;
@@ -114,10 +100,34 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
         // Retrieve pollutant info on town
         axios.get(`/getPollutantVolTown/?town=${args.townName}`)
-        .then(res => {setPollutants(res.data) 
+        .then(res => {
+            if (res.data) {
+            setPollutants(res.data) 
             processPollutantData()
+            }
         }) 
         .catch(err => console.log(err.res.data))
+
+        // Retrieve risks calculated by pollutant readings
+        axios.get(`/getDiseaseRisks/?town=${args.townName}`)
+        .then(res => {
+            if (res.data) {
+                setRiskData(res.data);
+            }
+            
+        })
+        .catch(err => console.log(err.res.data))
+
+        // Retrieve Pollutant averages
+        axios.get(`/getPollutantAvgsTown?town=${args.townName}`)
+        .then(
+            res => {
+                setPolAverages(res.data);
+            }
+        )
+        .catch(err => console.log(err.res.data))
+
+        
         
 
     },[args, pollutantFilter, monthRange])
@@ -253,35 +263,15 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     const computeRelativeRisk = (pol, type) => {
 
- 
-        const mean = pollutantReadings ? pollutantReadings.reduce((acc, curr) => acc + curr[pollutantDBKeyMap[pol]], 0) / pollutantReadings.length : 0;
-       
-        // Our counterfactoral concentration will be the pollutant threshold (defined by WHO)
-        const conc_diff = mean - WHOThresholds[pol];
+        const data = riskData[type];
+        
+        return <RiskBar title={pol} perc={data[pol]}/>
 
-        // Calculate beta coeff based on CRF of pollutant and it's UC (10 ugm^-3)
-        let beta_coef;
-        switch( type ){
-            case "CVD":
-                beta_coef = Math.log(globalRR_CVD[pol]) / 10;
- 
-                break;
-            case "RES":
-                beta_coef = Math.log(globalRR_RES[pol]) / 10;
- 
-                break;
-            default:
-                beta_coef = 0;
-        }
-
-  
-        const result = Math.exp( (beta_coef * conc_diff) ).toFixed(2);
-
-     
-
-        return <RiskBar title={pol} perc={result}/>
-
-        }
+    }
+    
+    const formatRisk = (input) => {
+       return <h4>{input > 1 ? `+${((input - 1) * 10).toFixed(2)}% ` : "N/A" }</h4>
+    }
         
     const diseaseOverview = () => {
 
@@ -293,6 +283,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         The Relative Risks have been calculated using CRFs provided by the <a href={"https://www.who.int/publications/i/item/9789289062633"}>HRAPIE-2 Project</a> WHO.  
                     </span>
                     <br></br>
+
                     <h3>Risk Based on Annual Average</h3>
                     <div className={"disease-overview-container"}>
                         <div className={"disease-overview-box"}>
@@ -315,9 +306,133 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                                         return <div key={pol}>
                                             {computeRelativeRisk(pol, "CVD") }
                                             </div>
-                                    })}</div>
+                            })}</div>
+ 
                         </div>
-                        
+                    </div>
+                    <div className={"disease-table"}>
+                        <h3>Specific Disease Mortalities</h3>
+                        <br></br>
+                        <table>
+                            <tr>
+                                <th>Disease</th>
+                                <th>NO2</th>
+                                <th>PM10</th>
+                                <th>PM25</th>
+                                <th>O3</th>
+                            </tr>
+                            <tr>
+                                <td>Lung Cancer</td>
+                                <td>{riskData ?  formatRisk(riskData["LUNGC"]["NO2"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM10"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM25"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["LUNGC"]["O3"]) : "Loading"}</td>
+                            </tr>
+                            <tr>
+                                <td>IHD</td>
+                                <td>{riskData ? formatRisk(riskData["IHD"]["NO2"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["IHD"]["PM10"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["IHD"]["PM25"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
+                            </tr>
+                            <tr>
+                                <td>COPD</td>
+                                <td>{riskData ? formatRisk(riskData["COPD"]["NO2"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["COPD"]["PM10"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["COPD"]["PM25"]) : "Loading"}</td>
+                                <td>{riskData ? formatRisk(riskData["COPD"]["O3"]) : "Loading"}</td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+                    <div className={"disease-overview-explanation"}>
+                            <h2>How relative risks are calculated.</h2>
+                            <p>The above estimations of relative risk increase are calculated using WHO Thresholds as our baseline concentration. Therefore, these relative risks are made relative to the 
+                                WHO Guidelines of each pollutant threshold, using known Relative Risks provided by the WHO Hrapie-2 Study.
+                            </p>
+
+                            <table className={"guideline-table"}>
+                                <tr>
+                                    <th>Pollutant</th>
+                                    <th>WHO Guideline. 2022</th>
+
+                                    <th>{args.townName} Reading</th>
+                                </tr>
+                                <tr>
+                                    <td>PM 2.5</td>
+                                    <td>{WHOThresholds["PM25"]}µg/m³</td>
+                                    <td>{polAverages["PM25"]}µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>PM 10</td>
+                                    <td>{WHOThresholds["PM10"]}µg/m³</td>
+                                    <td>{polAverages["PM10"]}µg/m³</td>
+                                </tr>
+                                    <tr>
+                                    <td>O3</td>
+                                    <td>{WHOThresholds["O3"]}µg/m³</td>
+                                    <td>{polAverages["O3"]}µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>NO2</td>
+                                    <td>{WHOThresholds["NO2"]}µg/m³</td>
+                                    <td>{polAverages["NO2"]}µg/m³</td>
+                                </tr>
+                            </table>
+
+                            <p>The following table contains all the Relative Risks provided by the HRAPIE-2 study.</p>
+
+                            <table className={"guideline-table"}>
+                                <tr>
+                                    <th>Disease</th>
+                                    <th>PM2.5</th>
+                                    <th>PM10</th>
+                                    <th>O3</th>
+                                    <th>NO2</th>
+                                </tr>
+                                <tr>
+                                    <td>Respiratory Related</td>
+                                    <td>{globalRR_RES["PM25"]} per 10 µg/m³</td>
+                                    <td>{globalRR_RES["PM10"]} per 10 µg/m³</td>
+                                    <td>{globalRR_RES["O3"]} per 10 µg/m³</td>
+                                    <td>{globalRR_RES["NO2"]} per 10 µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>Cardiovascular Related </td>
+                                    <td>{globalRR_CVD["PM25"]} per 10 µg/m³</td>
+                                    <td>{globalRR_CVD["PM10"]} per 10 µg/m³</td>
+                                    <td>N/A</td>
+                                    <td>{globalRR_CVD["NO2"]} per 10 µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>IHD</td>
+                                    <td>{IHD_RR["PM25"]} per 10 µg/m³</td>
+                                    <td>{IHD_RR["PM10"]} per 10 µg/m³</td>
+                                    <td>N/A</td>
+                                    <td>{IHD_RR["NO2"]} per 10 µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>COPD</td>
+                                    <td>{COPD_RR["PM25"]} per 10 µg/m³</td>
+                                    <td>{COPD_RR["PM10"]} per 10 µg/m³</td>
+                                    <td>N/A</td>
+                                    <td>{COPD_RR["NO2"]} per 10 µg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td>Lung Cancer</td>
+                                    <td>{LUNGC_RR["PM25"]} per 10 µg/m³</td>
+                                    <td>{LUNGC_RR["PM10"]} per 10 µg/m³</td>
+                                    <td>N/A</td>
+                                    <td>{LUNGC_RR["NO2"]} per 10 µg/m³</td>
+                                </tr>
+                            </table>
+                            <p> 
+                                The Relative Risks extracted here are then used in the exponential relative risk model to calculate each individual relative risk given by 
+                                pollutant concentrations, relative to their corresponding WHO Guideline for long-term mortality of the complication.
+                            </p>
+
+                  
                     </div>
                     
                 </div>
@@ -327,6 +442,8 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     const pollutionOverview = () => {
     
+
+
         return( 
             <>
             <div className={'town-overview-details'}>
@@ -406,7 +523,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         }
                     </Box>
                 </div>
-                </>
+            </>
         )
     }
 

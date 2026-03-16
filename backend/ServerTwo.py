@@ -68,6 +68,46 @@ class APIServer:
                 "NO": "no_ugm3",
                 "O3" : "o_ugm3"
             }
+ 
+        self.COPD_RR = {
+            "PM25" : 1.14,
+            "PM10" : 1.22,
+            "NO2" : 1.04
+        }
+ 
+        self.LUNGC_RR = {
+            "PM25" : 1.09,
+            "PM10" : 1.10,
+            "NO2" : 1.07
+        }
+ 
+        self.IHD_RR = {
+            "PM25" : 1.14,
+            "PM10" : 1.06,
+            "NO2" : 1.05
+        }
+
+        self.RR_CVD = {
+            "PM25" : 1.13,
+            "PM10" : 1.08,
+            "NO2" : 1.05,
+        }
+            
+        self.WHOThresholds = {
+            "SO2" : 40,
+            "NO2" : 40,
+            "PM10" : 15,
+            "PM25" : 5,
+            "CO2" : 4,
+            "O3": 60
+        }
+
+        self.RR_RES = {
+            "PM25" : 1.14,
+            "PM10" : 1.12,
+            "NO2" : 1.05,
+            "O3": 1.05 
+        }
 
         # Ensure that the database URL is correctly set.
         self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
@@ -91,9 +131,16 @@ class APIServer:
         self.populate_db() if dbprocessor else None
 
         self.register_routes()
-
     
 
+    def __compute_risk(self, RR, CFPol, Pol):
+        '''Computes Relative Risk Increase relative to a counterfactual pollutant reading CF'''
+        
+        # Compute CRF
+        CRF = math.log(RR) / 10
+
+        return round((math.exp(CRF * (Pol - CFPol))), 2)
+       
     def __cluster_town(self, input):
         
         _data = input.data
@@ -364,6 +411,47 @@ class APIServer:
             \n */getTownExpPolCluster/* - Clusters records of a town's annual pollutant reading
         '''
 
+        @self.app.get("/getDiseaseRisks")
+        def get_disease_risks(town: str, session: Session = Depends(self.get_session)):
+            ''' Will Retrieve the towns Relative Risk based on NO2, PM2.5 & PM10 readings.'''
+     
+
+            # Get Average NO2, PM10 and PM2.5 readings for the town
+            query = select(
+                func.round(func.avg(Pollutants.o_ugm3), 3).label("o3"),
+                func.round(func.avg(Pollutants.no2_ugm3), 3).label("no2"),
+                func.round(func.avg(Pollutants.pm10_ugm3), 3).label("pm10"),
+                func.round(func.avg(Pollutants.pm25_ugm3), 3).label("pm25")
+            ).where(Pollutants.town == town)
+ 
+            result = session.exec(query).first()
+
+            contents = {"RES" : {
+                    "NO2": self.__compute_risk(self.RR_RES["NO2"], self.WHOThresholds["NO2"], result.no2),
+                    "PM10": self.__compute_risk(self.RR_RES["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.RR_RES["PM25"], self.WHOThresholds["PM25"], result.pm25),
+                    "O3": self.__compute_risk(self.RR_RES["O3"], self.WHOThresholds["O3"], result.o3)
+            }, "CVD" : {
+                    "NO2": self.__compute_risk(self.RR_CVD["NO2"], self.WHOThresholds["NO2"], result.no2),
+                    "PM10": self.__compute_risk(self.RR_CVD["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.RR_CVD["PM25"], self.WHOThresholds["PM25"], result.pm25)
+            }, "IHD" : {
+                    "NO2": self.__compute_risk(self.IHD_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
+                    "PM10": self.__compute_risk(self.IHD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.IHD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)},
+                "LUNGC" : {
+                    "NO2": self.__compute_risk(self.LUNGC_RR["NO2"], self.WHOThresholds["NO2"], result.no2), 
+                    "PM10": self.__compute_risk(self.LUNGC_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.LUNGC_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
+            },
+            "COPD" : {
+                    "NO2": self.__compute_risk(self.COPD_RR["NO2"], self.WHOThresholds["NO2"], result.no2), 
+                    "PM10": self.__compute_risk(self.COPD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.COPD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
+            }}
+
+            return contents
+
 
         @self.app.get("/getTownsReadingsOnDate")
         def get_town_readings_date(date: date, session: Session = Depends(self.get_session)):
@@ -486,14 +574,13 @@ class APIServer:
 
             return cluster
 
-
-
         @self.app.get("/getTown/{id}")
         def get_town(id: int, session: Session = Depends(self.get_session)):
             row = session.get(Pollutants, id)
             if not row:
                 return {"error": "Not found"}
             return row
+
 
         @self.app.get("/getPollutantVolTown/")
         def get_pollutants_by_town(
@@ -544,6 +631,30 @@ class APIServer:
 
             return session.exec(query.order_by("avg")).mappings().all()
         
+        @self.app.get("/getPollutantAvgsTown")
+        def get_pollutant_avgs_town(
+            town: str,
+            session: Session = Depends(self.get_session)
+        ):
+            '''Returns all pollutant averages of a town'''
+            query = select(
+                func.round(func.avg(Pollutants.o_ugm3), 3).label("o3"),
+                func.round(func.avg(Pollutants.no2_ugm3), 3).label("no2"),
+                func.round(func.avg(Pollutants.pm10_ugm3), 3).label("pm10"),
+                func.round(func.avg(Pollutants.pm25_ugm3), 3).label("pm25"),
+                func.round(func.avg(Pollutants.so_ugm3), 3).label("so2")
+            ).where(Pollutants.town == town)
+ 
+            result = session.exec(query).first()
+
+            
+            return {
+                "NO2" : round(result.no2, 2),
+                "PM10" : round(result.pm10, 2),
+                "PM25" : round(result.pm25, 2),
+                "O3" : round(result.o3, 2),
+                "SO2" : round(result.so2, 2)
+            }
 
         @self.app.get("/getPollutantVol/")
         def get_pollutants(
@@ -572,5 +683,5 @@ class APIServer:
 # ================= RUN =================
 
 
-server = APIServer(dbprocessor=False)
+server = APIServer(dbprocessor=True)
 app = server.app

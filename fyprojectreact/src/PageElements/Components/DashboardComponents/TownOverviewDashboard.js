@@ -6,10 +6,7 @@ export default function TownOverviewDashboard({town, data, dateData}){
 
  
 
-    useEffect(() => {
-        console.log(JSON.stringify(data));
-    }, [])
-    
+ 
 
     return(
         <div className={"town-item"}>

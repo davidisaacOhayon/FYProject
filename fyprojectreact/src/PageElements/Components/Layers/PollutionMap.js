@@ -1,7 +1,7 @@
 import DeckGL, { PolygonLayer, TextLayer } from 'deck.gl';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { pollutantDBKeyMap } from '../Backend/PollutantConcentrationLimits';
+import { pollutantDBKeyMap } from '../Backend/PollutionInfo';
 import townPolygons from '../../Datasets/MaltaRegionsPolygons/TownPolygonInfo.json';
 import { townsCoordinates } from '../../Datasets/TownCoordinates';
 
