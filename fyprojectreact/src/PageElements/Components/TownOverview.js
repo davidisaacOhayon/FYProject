@@ -122,7 +122,10 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         axios.get(`/getPollutantAvgsTown?town=${args.townName}`)
         .then(
             res => {
-                setPolAverages(res.data);
+                if(res.data) {
+                    setPolAverages(res.data);
+                }
+                
             }
         )
         .catch(err => console.log(err.res.data))
@@ -275,6 +278,14 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         
     const diseaseOverview = () => {
 
+        if (!riskData) {
+            return (<>
+                <h1>
+                    No Data Available for analysis.
+                </h1>
+            </>)
+        }
+
         return(
                 <div className={"disease-overview"}> 
                     <h2>Disease Mortality Overview</h2>
@@ -321,27 +332,34 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                                 <th>PM25</th>
                                 <th>O3</th>
                             </tr>
-                            <tr>
-                                <td>Lung Cancer</td>
-                                <td>{riskData ?  formatRisk(riskData["LUNGC"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["O3"]) : "Loading"}</td>
-                            </tr>
-                            <tr>
-                                <td>IHD</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
-                            </tr>
-                            <tr>
-                                <td>COPD</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["O3"]) : "Loading"}</td>
-                            </tr>
+                            { riskData &&
+
+                            <>
+                                <tr>
+                                    <td>Lung Cancer</td>
+                                    <td>{riskData ?  formatRisk(riskData["LUNGC"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["O3"]) : "Loading"}</td>
+                                </tr>
+                                <tr>
+                                    <td>IHD</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
+                                </tr>
+                                <tr>
+                                    <td>COPD</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["O3"]) : "Loading"}</td>
+                                </tr>
+                            </>
+
+                            }
+
                         </table>
 
                     </div>
@@ -443,6 +461,14 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const pollutionOverview = () => {
     
 
+        if (!pollutantReadings || !displayData) {
+            return (<>
+                <h1>
+                    No Data Available for analysis.
+                </h1>
+            </>)
+
+        }
 
         return( 
             <>
