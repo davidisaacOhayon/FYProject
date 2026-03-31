@@ -261,7 +261,7 @@ export default function StatisticsDashboard(){
                     </ul>
                 </div>
                 <div className={'town-dashboards-container'}>
-                    {isLoading ? <h1>Loading</h1> : townFilter.map((town) => {
+                    {isLoading && globalData ? <h1>Loading</h1> : townFilter.map((town) => {
                         console.log(`Rendering dashboard for ${town} at loading ${isLoading}`);
                         return <TownOverviewDashboard  town={town} data={globalData[town]["DisplayData"]} dateData={globalData[town]["YearlyData"]}/>
                     })}
@@ -288,7 +288,7 @@ export default function StatisticsDashboard(){
                             },
                         }}
                     />
-                </div>
+            </div>
 
             
             {townFilter.length != 0 && !isLoading ? <TownPollutantBoard towns={townFilter}/> : null}

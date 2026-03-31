@@ -182,7 +182,7 @@ export default function TownClustering({polTown}){
             </div>
         )
     }else {
-        return <h2>Loading</h2>
+        return <h2>No Data Available At the moment.</h2>
     }
 
 

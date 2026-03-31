@@ -34,7 +34,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const [monthRange, setMonthRange] = useState([0, 11]);
 
     // Contains applied pollutants for filtering
-    const [pollutantFilter, setPollutantFilter] = useState([]);
+    const [pollutantFilter, setPollutantFilter] = useState(["SO2"]);
 
     // Contains applied display options of overview
     const [displayOption, setDisplayOption] = useState('pollution');
@@ -486,7 +486,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         valueFormatter: (date) => {
                             const month = date.getMonth();
                             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            return `${monthNames[month]} ${date.getFullYear().toString()}`;
+                            return `${monthNames[month]} \n ${date.getFullYear().toString()}`;
                         }
                         }
                     ]}

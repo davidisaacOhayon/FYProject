@@ -87,10 +87,17 @@ class APIServer:
             "NO2" : 1.05
         }
 
-        self.RR_CVD = {
+        self.CVD_RR = {
             "PM25" : 1.13,
             "PM10" : 1.08,
             "NO2" : 1.05,
+        }
+
+        self.RES_RR = {
+            "PM25" : 1.14,
+            "PM10" : 1.12,
+            "NO2" : 1.05,
+            "O3": 1.05 
         }
             
         self.WHOThresholds = {
@@ -102,12 +109,7 @@ class APIServer:
             "O3": 60
         }
 
-        self.RR_RES = {
-            "PM25" : 1.14,
-            "PM10" : 1.12,
-            "NO2" : 1.05,
-            "O3": 1.05 
-        }
+
 
         # Ensure that the database URL is correctly set.
         self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
@@ -132,6 +134,7 @@ class APIServer:
 
         self.register_routes()
     
+
 
     def __compute_risk(self, RR, CFPol, Pol):
         '''Computes Relative Risk Increase relative to a counterfactual pollutant reading CF'''
@@ -411,6 +414,77 @@ class APIServer:
             \n */getTownExpPolCluster/* - Clusters records of a town's annual pollutant reading
         '''
 
+
+        @self.app.post("/getPolDistribution")
+        def get_pol_distribution(pollutants : list[str]):
+
+            # Get Mean
+            mean = np.mean(pollutants)
+
+            # Get Optimal Decimal points for scaling
+            c = math.floor(mean * 100) / 100
+
+
+
+        @self.app.post("/getDiseaseRisksTowns")
+        def get_disease_risks_towns(towns: list[str], session: Session = Depends(self.get_session)):
+            '''Retrieves Relative risks of towns based on NO2, PM2.5 & PM10 readings'''
+
+            # Select average pollutants of all selected towns
+            query = select(
+                Pollutants.town,
+                func.round(func.avg(Pollutants.o_ugm3), 3).label("O3"),
+                func.round(func.avg(Pollutants.no2_ugm3), 3).label("NO2"),
+                func.round(func.avg(Pollutants.pm10_ugm3), 3).label("PM10"),
+                func.round(func.avg(Pollutants.pm25_ugm3), 3).label("PM25")
+            ).where(Pollutants.town.in_(towns)).group_by(Pollutants.town)
+
+            qResults = session.exec(query).mappings().all()
+            
+            # Calculate Disease Risks
+
+            results = []
+            for data in qResults:
+                body = {
+                    "Town" : data.town,    
+                    "CVD" : {
+                    "PM25" : self.__compute_risk(self.CVD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
+                    "PM10" : self.__compute_risk(self.CVD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
+                    "NO2" : self.__compute_risk(self.CVD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
+                    },
+                    "RES" : {
+                        "PM25" : self.__compute_risk(self.RES_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
+                        "PM10" : self.__compute_risk(self.RES_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
+                        "NO2" : self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["NO2"], data.NO2),
+                        "O3" : self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["O3"], data.O3)
+                    },
+                    "LUNG" : {
+                    "PM25" : self.__compute_risk(self.LUNGC_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
+                    "PM10" : self.__compute_risk(self.LUNGC_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
+                    "NO2" : self.__compute_risk(self.LUNGC_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
+                    },
+                    "COPD" : {
+                    "PM25" : self.__compute_risk(self.COPD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
+                    "PM10" : self.__compute_risk(self.COPD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
+                    "NO2" : self.__compute_risk(self.COPD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
+                    },
+                    "IHD" : {
+                    "PM25" : self.__compute_risk(self.IHD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
+                    "PM10" : self.__compute_risk(self.IHD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
+                    "NO2" : self.__compute_risk(self.IHD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
+                    }
+                }
+
+                results.append(body)
+                
+
+
+
+
+            return results
+
+
+
         @self.app.get("/getDiseaseRisks")
         def get_disease_risks(town: str, session: Session = Depends(self.get_session)):
             ''' Will Retrieve the towns Relative Risk based on NO2, PM2.5 & PM10 readings.'''
@@ -427,14 +501,14 @@ class APIServer:
             result = session.exec(query).first()
 
             contents = {"RES" : {
-                    "NO2": self.__compute_risk(self.RR_RES["NO2"], self.WHOThresholds["NO2"], result.no2),
-                    "PM10": self.__compute_risk(self.RR_RES["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.RR_RES["PM25"], self.WHOThresholds["PM25"], result.pm25),
-                    "O3": self.__compute_risk(self.RR_RES["O3"], self.WHOThresholds["O3"], result.o3)
+                    "NO2": self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
+                    "PM10": self.__compute_risk(self.RES_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.RES_RR["PM25"], self.WHOThresholds["PM25"], result.pm25),
+                    "O3": self.__compute_risk(self.RES_RR["O3"], self.WHOThresholds["O3"], result.o3)
             }, "CVD" : {
-                    "NO2": self.__compute_risk(self.RR_CVD["NO2"], self.WHOThresholds["NO2"], result.no2),
-                    "PM10": self.__compute_risk(self.RR_CVD["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.RR_CVD["PM25"], self.WHOThresholds["PM25"], result.pm25)
+                    "NO2": self.__compute_risk(self.CVD_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
+                    "PM10": self.__compute_risk(self.CVD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
+                    "PM25": self.__compute_risk(self.CVD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
             }, "IHD" : {
                     "NO2": self.__compute_risk(self.IHD_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
                     "PM10": self.__compute_risk(self.IHD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
@@ -461,6 +535,48 @@ class APIServer:
             query = select(Pollutants).where(Pollutants.day == date)
             return session.exec(query).all()
         
+
+        @self.app.post("/getEDATownsPol")
+        def get_eda_towns(payload: TownsPollutantPayload, session: Session = Depends(self.get_session)):
+            '''Returns data processed for EDA of selected towns'''
+
+            pol = payload.pollutant
+            towns = payload.towns
+
+            col = getattr(Pollutants, self.pollutantDBKeyMap[pol])
+
+            query = (select(Pollutants.town,
+                            func.round(func.avg(col), 3))
+                    .where(Pollutants.town.in_(towns))
+                    .group_by(Pollutants.town))
+            
+            results = session.exec(query).all()
+
+            dataset = [{"town" : town, "avg" : avg} for town, avg in results]
+
+            averages = [set["avg"] for set in dataset]
+
+            # General statistics
+            average = round(sum(avg for avg in averages) / len(results), 2)
+
+            std = round(np.std([avg for avg in averages]), 3)
+
+            # Exceedence rate
+            count = 0
+            for avg in averages:
+                if avg > self.WHOThresholds[pol]:
+                    count += 1
+            
+            ex_rate = round((count / len(results)), 2)
+
+            # Worst Town & Best Town
+            worst = max(dataset, key= lambda x : x["avg"])["town"]
+            best =  min(dataset, key= lambda x : x["avg"])["town"]
+             
+
+            return {"Average" : average, "STD" : std, "ex_rate" : ex_rate, "worst": worst, "best" : best}
+                
+
         @self.app.get("/getEDATownPol")
         def get_eda_town_pol(town: str, pollutant: str, session: Session = Depends(self.get_session)):
             '''Returns all records of a town's pollutant readings for EDA purposes.'''
@@ -672,6 +788,8 @@ class APIServer:
             return session.exec(query.order_by(Pollutants.day)).all()
 
 
+        
+
         @self.app.get("/getAvailableTownNames")
         def get_available_towns(session: Session = Depends(self.get_session)):
 
@@ -683,5 +801,7 @@ class APIServer:
 # ================= RUN =================
 
 
-server = APIServer(dbprocessor=True)
+
+ 
+server = APIServer(dbprocessor=False)
 app = server.app

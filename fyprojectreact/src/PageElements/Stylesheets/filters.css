@@ -8,21 +8,29 @@
 .filter-selection-list{
     height: 100%;
     min-height: 20vh;
-    width: 80%;
+    display: flex;
+    justify-content: center;
+ 
+    width: 100%;
     display: grid;
-    grid-template-columns: 40% 40%;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
     overflow-y: scroll;
     gap: 10%;
 }
 .filter-selection-list input[type="checkbox"]{
-    width: 20px;
-    height: 20px;
-    accent-color: white;
-    margin: 5px;
+    width: 80%;
+    height: 30px;
+    border-radius: 5px;
+    border: none;
+    padding: 5px;
+    font-size: 15px;
 }
-label {
+.filter-label{
     display: flex;
-    justify-content: center;
     align-items: center;
+    width: 100%;
+}
+.filter-label input{
+    justify-self: flex-end;
 }
 

@@ -122,10 +122,15 @@
 
 
 /* -------- Town Pollutant Board */
+.town-pollutant-entries{
+    width: 100%;
+    height: clamp(20vh, 80vh, 60vh);
+    overflow-y: scroll;
+}
 .town-pollutant-entries-container{
     display: flex;
     width: 100%;
-    gap: clamp(5%, 5%, 15%);
+    gap: clamp(2%, 3%, 15%);
 }
 .town-pollutant-board{
     margin-top: clamp(5vh, 4vh, 6vh);
@@ -142,6 +147,7 @@
     flex-direction: column;
     gap: clamp(2%, 4%, 5%);
     margin-top: clamp(2vh, 2vh, 4vh);
+    align-items: center;
 }
 
 .pollutant-filter-button{
@@ -158,8 +164,10 @@
     gap: clamp(10%, 10%, 20%);
     background-color: var(--varBG);
     padding: 10px;
+    box-sizing: border-box;
     align-items: center;
     justify-content: space-between;
+    
     
 }
 .town-pollutant-entry h3{
@@ -171,3 +179,22 @@
     padding: 50px;
     background-color: #1c1c1c;
 }
+
+.town-pollutant-statistics{
+    width: 100%;
+    background-color: #1c1c1c;
+    padding: 10px;
+    box-sizing: border-box;
+}
+.disease-table-dashboard{
+    width: 100%;
+    height: clamp(8vh, 15vh, 15vh);
+    overflow-y: scroll;
+    font-size: 20px;
+    margin: 10px;
+}
+.disease-table-dashboard tr, th, td{
+    border: 0.1px white solid;
+    height: 50px;
+}
+ 

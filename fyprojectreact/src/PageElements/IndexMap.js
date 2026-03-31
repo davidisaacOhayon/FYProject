@@ -370,17 +370,17 @@ export default function IndexMap() {
           <h2>Pollution Filter</h2>
           <hr></hr>
           {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
-          <div>
+          <div className={"filters-options-main"}>
             <h3>Date Selection:</h3>
             <input disabled={polAnnum} type="date" id="date" defaultValue={mainDate} onChange={(e) => {
               setDate(e.target.value)}}></input>
-            <label for={"annum"}> Annual Average:
+            <label for={"annum"}> Annual Average:</label>
             <input type="checkbox" id="annum" name="annum" onChange={(e) => setPolAnnum(e.target.checked)} ></input>
-            </label>
+            
+            <label for={"pollution"}> Toggle Filter Mapping:</label>
+             <input placeholder={"Pollution Layer"} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
           </div>
-            <label for={"pollution"}> Pollution Layer:
-              <input placeholder={"Pollution Layer "} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
-            </label>
+
         </div>
       </div>
 
