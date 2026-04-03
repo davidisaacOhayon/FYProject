@@ -47,6 +47,9 @@ class ClusterTownData():
 
 # ================= PAYLOAD MODELS =================
 
+class TownsPayload(BaseModel):
+    towns: list[str]
+
 class TownsPollutantPayload(BaseModel):
     towns: list[str]
     pollutant: str
@@ -138,7 +141,6 @@ class APIServer:
 
     def __compute_risk(self, RR, CFPol, Pol):
         '''Computes Relative Risk Increase relative to a counterfactual pollutant reading CF'''
-        
         # Compute CRF
         CRF = math.log(RR) / 10
 
@@ -225,7 +227,7 @@ class APIServer:
         pm_df = df[['DatePM', 'PM2.5 (µg/m3)', 'PM10 (µg/m3)']].copy()
 
         # Group by 'Date' and calculate mean for numeric columns for each day   
-        df = df.groupby("Date", as_index=False).mean(numeric_only=True)
+        df = df.groupby("Date", as_index=False).mean(numeric_only=True) 
  
         return df, pm_df
    
@@ -292,9 +294,7 @@ class APIServer:
     
     def __handleXLSXFile(self, path):   
         with Session(self.engine) as session:
-            # lim = getUsableDatasetLength(path)
             mainData = {}
-
             towns = townsCoordinates.keys()
             print(f"Towns to process: {len(towns)}")
             count = 0
@@ -317,7 +317,6 @@ class APIServer:
                     # go through each pollutant
                     for p in pollutants:
                         inverseDistance = 0
-                        # print(f"Processing pollutant {p} for town {town} at row {row}")
                         # Keep track of pollutant sum
                         pollutantSum = 0
                         print(f"Processing pollutant {p} ---------------------------------------------------------------")
@@ -327,7 +326,7 @@ class APIServer:
                             # Read the station data 
                             df = pd.read_excel(path, sheet_name=station, na_values=['na'])
                             # Clean data frame by handling NAN values, converting data types and grouping by date
-                            # Contains main dataframe for NO2,SO2, and O3, and   a separate dataframe for PM10 and PM2.5
+                            # Contains main dataframe for NO2, SO2, O3 and a separate dataframe for PM10 and PM2.5
                             df, pm_df = self.__cleanDataFrame(df)
    
                         
@@ -336,26 +335,15 @@ class APIServer:
                             townData['Date'] = df.iloc[row]['Date']
 
 
-                            # Get PM10 and PM2.5 values for the town based on the date of the current row and station
-                            # Congrats to ERA for not formatting the date in the same way across all stations,
-                            # so we have to do this for each station instead of just once per row
-
                             # Get station coordinates
                             stationLat, stationLon = stationsTownMap[station]['coordinates']
 
                             # Calculated distance from station to current town
                             distance = round(self.__calculate_town_distance(townLat, townLon, stationLat, stationLon), 2)
-
-
-                            print(f"Distance from {town} to station {station} is {distance} km")
-
-                            print(f"Accessing {row}, pollutant {p}, station {station}")
-                            # print(df.iloc[row])
                             
                             # Check if we are accessing PM10 PM25
                             if (p == "PM10 (µg/m3)" or p == "PM2.5 (µg/m3)"):
                                 # Access PM10 and PM2.5 rows of the current station and date
-                                print(f"Accessing PM Data for station {station} on {pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0]} µg/m3")
                                 pollutantSum += pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0] / distance
                                 # Average the PM Values
                                 inverseDistance += 1 / distance
@@ -370,16 +358,12 @@ class APIServer:
                                 except Exception as e:
                                     print(f"Error accessing row {row} for station {station}, pollutant {p}: {e}")
 
-
-                        print(f"Total pollutant sum for {p} in town {town} at row {row} is {pollutantSum} with inverse distance sum of {inverseDistance}")
                         townData[p] = math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0
 
-                        print(f"Pollutant {p} for town {town} at row {row} is {townData[p]} ")
 
 
 
                     data.append(townData)
-                    print(f"Finalized Pollutant Record town:{town} date:{townData['Date']} NO2:{townData['NO2 (µg/m3)']} SO2:{townData['SO2 (µg/m3)']} O3:{townData['O3 (µg/m3)']} PM10:{townData['PM10 (µg/m3)']} PM25:{townData['PM2.5 (µg/m3)']}")
                     object = Pollutants(
                         town = townData['town'],
                         no2_ugm3 = townData['NO2 (µg/m3)'],
@@ -417,7 +401,6 @@ class APIServer:
 
         @self.app.post("/getPolDistribution")
         def get_pol_distribution(pollutants : list[str]):
-
             # Get Mean
             mean = np.mean(pollutants)
 
@@ -530,8 +513,6 @@ class APIServer:
         @self.app.get("/getTownsReadingsOnDate")
         def get_town_readings_date(date: date, session: Session = Depends(self.get_session)):
             '''Returns all towns pollutant readings on a specific date.'''
-
-            
             query = select(Pollutants).where(Pollutants.day == date)
             return session.exec(query).all()
         
@@ -705,6 +686,7 @@ class APIServer:
             end_date: date | None = None,
             session: Session = Depends(self.get_session),
         ):
+            '''Retrieves pollutant readings of a town.'''
             query = select(Pollutants).where(Pollutants.town == town)
 
             if start_date:
@@ -713,6 +695,31 @@ class APIServer:
                 query = query.where(Pollutants.day <= end_date)
 
             return session.exec(query.order_by(Pollutants.day)).all()
+
+        @self.app.post("/getPollutantVolTowns/")
+    
+        def get_pollutants_by_towns(
+            payload: TownsPayload,
+            start_date: date | None = None,
+            end_date: date | None = None,
+            session: Session = Depends(self.get_session),
+        ):
+            '''Retrieves pollutant readings of selected towns.'''
+
+            response = {}
+            for town in payload.towns:
+                query = select(Pollutants).where(Pollutants.town == town)
+                # Apply date filters if provided
+                if start_date:
+                    query = query.where(Pollutants.day >= start_date)
+                if end_date:
+                    query = query.where(Pollutants.day <= end_date)
+                townResult = session.exec(query.order_by(Pollutants.day)).all()
+                response[town] = townResult
+
+
+
+            return response
         
 
         @self.app.post("/getPollutantAvgTowns/")
@@ -787,9 +794,6 @@ class APIServer:
 
             return session.exec(query.order_by(Pollutants.day)).all()
 
-
-        
-
         @self.app.get("/getAvailableTownNames")
         def get_available_towns(session: Session = Depends(self.get_session)):
 
@@ -800,8 +804,5 @@ class APIServer:
 
 # ================= RUN =================
 
-
-
- 
 server = APIServer(dbprocessor=False)
 app = server.app

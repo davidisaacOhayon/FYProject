@@ -92,6 +92,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         { value: 10, label: "Nov" },
         { value: 11, label: "Dec" },
     ];
+    
     // Process pollutant data for risk analysis on potential diseases
     useEffect(() => {
         if( args.townName == null){
@@ -292,6 +293,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                     <hr></hr>
                     <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.
                         The Relative Risks have been calculated using CRFs provided by the <a href={"https://www.who.int/publications/i/item/9789289062633"}>HRAPIE-2 Project</a> WHO.  
+                        It should be noted that these risks are highly suggestive and may not be sufficiently accurate.
                     </span>
                     <br></br>
 
@@ -532,7 +534,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
 
                 <Suspense fallback={<h2>Loading</h2>}>
-                    <TownClustering pollutant={"NO2"} polTown={args.townName}/>
+                    <TownClustering  polTown={args.townName}/>
                 </Suspense>
 
                 

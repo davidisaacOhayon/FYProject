@@ -108,7 +108,7 @@ export default function IndexMap() {
 
   // HOVERED TOWN USE EFFECT HANDLER
   useEffect(() => {
-  const layers = [PollutionRegionlayer];
+  const layers = [TownsLayer];
 
 
   if (hoveredTown) {
@@ -243,16 +243,14 @@ export default function IndexMap() {
   }));
 
   // Polygon layer to overlay all Maltese town
-  let PollutionRegionlayer = useMemo(() => new PolygonLayer({
+  let TownsLayer = useMemo(() => new PolygonLayer({
     id: "PolygonTownLayer",
     data: mData,
     getPolygon : d => d.geometry.coordinates[0][0],
     getLineColor:[255, 255, 255],
-    // getFillColor: d => [255, Math.random() * 255 , 50, 120],
-    // getFillColor:
     getLineWidth: 10,
     lineWidthMinPixels: 1,
-
+    // ON CLICK EVENT LISTENER
     onClick: (info, event) => {
       if (info.object){
         // If overlay is open, check if click is within overlay bounds
@@ -269,17 +267,15 @@ export default function IndexMap() {
             return;
           }
         }
-
         // Set town overlay args with name, and viewport coordinates
         setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)});
         setMapActive(false);
       }
     },
-
+    // ON HOVER EVENT LISTENER
     onHover: (info, event) => {
       // If object info exists
       if (info.object && !overlayArgs){
-        // console.log(info.index + info.object.properties.locality_n)
         // Highlight town
         setHovered(info.object.geometry.coordinates[0])
       }else{
@@ -302,9 +298,6 @@ export default function IndexMap() {
     
   }), [townLayerData, pollutants]); 
 
-
-
-
   let hoverLayer = useMemo(() => {
 
       if (hoveredTown) {
@@ -321,8 +314,8 @@ export default function IndexMap() {
 
     let baseLayers = [];
 
-    if (PollutionRegionlayer){
-      baseLayers.push(PollutionRegionlayer);
+    if (TownsLayer){
+      baseLayers.push(TownsLayer);
     }
 
 
@@ -343,20 +336,10 @@ export default function IndexMap() {
 
     return baseLayers;
 
-  }, [PollutionRegionlayer, townLayerData, pollutants, townLayerToggled])
+  }, [TownsLayer, townLayerData, pollutants, townLayerToggled])
 
 
-  // useEffect(() => { 
-  //   if (townLayerToggled){
-  //     console.log("Town layer is toggled")
-  //   }else {
-  //     console.log("town layer is untoggled")
-  //   }
-  //   setInterval(() => {
-  //     console.log(layers)
-  //   }, [2000])
-  // }, [layers, townLayerToggled])
-
+ 
   return (
     <>
     <DeckGL controller={mapActive} ref={deckRef} initialViewState={INITIAL_MAP_STATE}layers={[layers, hoverLayer]}>
