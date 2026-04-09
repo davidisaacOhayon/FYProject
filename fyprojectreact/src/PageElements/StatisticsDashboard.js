@@ -45,7 +45,7 @@ export default function StatisticsDashboard(){
     const [isLoading, setLoading] = useState(false);
 
     // List down each pollutant key
-    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3']
+    const pollutants = ['SO2', 'NO2', 'PM25','PM10', 'O3']
 
     const townNames = [
     "San Lawrenz",
@@ -110,10 +110,7 @@ export default function StatisticsDashboard(){
     "Santa Venera",
     "Qormi"
     ];
-
- 
-
- 
+    
     useEffect(() => {   
         if (townFilter.length === 0) {
             return;

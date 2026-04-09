@@ -38,7 +38,7 @@ export default function FiltersSelection({data, setData}){
                     {Object.values(data).map((element, index) => 
                         <>
                         <label className={"filter-label"} for={element['name']}>{polAcronymNameMap[element['name']] || element["name"]}</label>
-                        <input onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']} type={"checkbox"} value={element['name']}/>
+                        <input className={"filter-input"}onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']} type={"checkbox"} value={element['name']}/> 
                         </>
 
                     )}

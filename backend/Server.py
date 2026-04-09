@@ -1,3 +1,5 @@
+from unittest import result
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
@@ -7,6 +9,7 @@ from sqlalchemy import text
 from pydantic import BaseModel
 import numpy as np 
 from collections import Counter
+
 import calendar
 import datetime
 import logging
@@ -58,7 +61,18 @@ class TownPollutantPayload(BaseModel):
     town: str
     pollutant: str
 
+class DiseaseRiskPayload(BaseModel):
+    town: str
+    risks: object
+
+class DiseaseRiskTownsPayload(BaseModel):
+    towns: list[str]
+    risks: object
+
 # ================= SERVER =================
+
+logger = logging.getLogger('uvicorn.error')
+logger.setLevel(logging.DEBUG)
 
 class APIServer:
     def __init__(self, dbprocessor: bool = False):
@@ -137,15 +151,21 @@ class APIServer:
 
         self.register_routes()
     
-
-
     def __compute_risk(self, RR, CFPol, Pol):
         '''Computes Relative Risk Increase relative to a counterfactual pollutant reading CF'''
         # Compute CRF
-        CRF = math.log(RR) / 10
 
-        return round((math.exp(CRF * (Pol - CFPol))), 2)
-       
+        logger.debug(f"Computing risk with RR: {RR}, CFPol: {CFPol}, Pol: {Pol}")
+        
+        if RR == 0:
+            return 0
+        
+        CRF = math.log(RR) / 10
+        result = round((math.exp(CRF * (Pol - CFPol))), 2)
+        logger.debug(f"Computed risk: {result} for RR: {RR}, CFPol: {CFPol}, Pol: {Pol}")
+
+        return result
+
     def __cluster_town(self, input):
         
         _data = input.data
@@ -328,8 +348,6 @@ class APIServer:
                             # Clean data frame by handling NAN values, converting data types and grouping by date
                             # Contains main dataframe for NO2, SO2, O3 and a separate dataframe for PM10 and PM2.5
                             df, pm_df = self.__cleanDataFrame(df)
-   
-                        
 
                             # Get date for current row
                             townData['Date'] = df.iloc[row]['Date']
@@ -410,103 +428,131 @@ class APIServer:
 
 
         @self.app.post("/getDiseaseRisksTowns")
-        def get_disease_risks_towns(towns: list[str], session: Session = Depends(self.get_session)):
+        def get_disease_risks_towns(payload: DiseaseRiskTownsPayload, session: Session = Depends(self.get_session)):
             '''Retrieves Relative risks of towns based on NO2, PM2.5 & PM10 readings'''
+
+            towns = payload.towns
+            risks = payload.risks
+
+            logger.debug(f"Received payload for disease risks for towns: {payload.towns} with risks: {payload.risks}")  
 
             # Select average pollutants of all selected towns
             query = select(
                 Pollutants.town,
+                func.round(func.avg(Pollutants.so_ugm3), 3).label("SO2"),
                 func.round(func.avg(Pollutants.o_ugm3), 3).label("O3"),
                 func.round(func.avg(Pollutants.no2_ugm3), 3).label("NO2"),
                 func.round(func.avg(Pollutants.pm10_ugm3), 3).label("PM10"),
                 func.round(func.avg(Pollutants.pm25_ugm3), 3).label("PM25")
             ).where(Pollutants.town.in_(towns)).group_by(Pollutants.town)
 
-            qResults = session.exec(query).mappings().all()
-            
-            # Calculate Disease Risks
+            results = session.exec(query).mappings().all()
 
-            results = []
-            for data in qResults:
-                body = {
-                    "Town" : data.town,    
-                    "CVD" : {
-                    "PM25" : self.__compute_risk(self.CVD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
-                    "PM10" : self.__compute_risk(self.CVD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
-                    "NO2" : self.__compute_risk(self.CVD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
-                    },
-                    "RES" : {
-                        "PM25" : self.__compute_risk(self.RES_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
-                        "PM10" : self.__compute_risk(self.RES_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
-                        "NO2" : self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["NO2"], data.NO2),
-                        "O3" : self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["O3"], data.O3)
-                    },
-                    "LUNG" : {
-                    "PM25" : self.__compute_risk(self.LUNGC_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
-                    "PM10" : self.__compute_risk(self.LUNGC_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
-                    "NO2" : self.__compute_risk(self.LUNGC_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
-                    },
-                    "COPD" : {
-                    "PM25" : self.__compute_risk(self.COPD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
-                    "PM10" : self.__compute_risk(self.COPD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
-                    "NO2" : self.__compute_risk(self.COPD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
-                    },
-                    "IHD" : {
-                    "PM25" : self.__compute_risk(self.IHD_RR["PM25"], self.WHOThresholds["PM25"], data.PM25),
-                    "PM10" : self.__compute_risk(self.IHD_RR["PM10"], self.WHOThresholds["PM10"], data.PM10),
-                    "NO2" : self.__compute_risk(self.IHD_RR["NO2"], self.WHOThresholds["NO2"], data.NO2)
-                    }
+            logger.debug(f"retrieved these {results}")
+            response = []
+            for entry in results:
+                logger.debug("Beginning computation")
+                map = {
+                    "SO2" : entry["SO2"],
+                    "NO2" : entry["NO2"],
+                    "PM10" : entry["PM10"],
+                    "PM25" : entry["PM25"],
+                    "O3" : entry["O3"]
                 }
+                # Calculate Disease Risks
 
-                results.append(body)
-                
+            
+            
+                logger.debug(f"Beginning computation for {entry.town}")
+                body = {
+                        "Town" : entry.town,    
+                        "CVD" : {
+                            "PM25" : self.__compute_risk(risks["CVD"]["PM25"], self.WHOThresholds["PM25"], entry.PM25),
+                            "PM10" : self.__compute_risk(risks["CVD"]["PM10"], self.WHOThresholds["PM10"], entry.PM10),
+                            "NO2" : self.__compute_risk(risks["CVD"]["NO2"], self.WHOThresholds["NO2"], entry.NO2),
+                            "O3" : self.__compute_risk(risks["CVD"]["O3"], self.WHOThresholds["O3"], entry.O3),
+                            "SO2" : self.__compute_risk(risks["CVD"]["SO2"], self.WHOThresholds["SO2"], entry.SO2)
+                        },
+                        "RES" : {
+                            "PM25" : self.__compute_risk(risks["RES"]["PM25"], self.WHOThresholds["PM25"], entry.PM25),
+                            "PM10" : self.__compute_risk(risks["RES"]["PM10"], self.WHOThresholds["PM10"], entry.PM10),
+                            "NO2" : self.__compute_risk(risks["RES"]["NO2"], self.WHOThresholds["NO2"], entry.NO2),
+                            "O3" : self.__compute_risk(risks["RES"]["O3"], self.WHOThresholds["O3"], entry.O3),
+                            "SO2" : self.__compute_risk(risks["RES"]["SO2"], self.WHOThresholds["SO2"], entry.SO2),
+                        },
+                        "LUNGC" : {
+                            "PM25" : self.__compute_risk(risks["LUNGC"]["PM25"], self.WHOThresholds["PM25"], entry.PM25),
+                            "PM10" : self.__compute_risk(risks["LUNGC"]["PM10"], self.WHOThresholds["PM10"], entry.PM10),
+                            "NO2" : self.__compute_risk(risks["LUNGC"]["NO2"], self.WHOThresholds["NO2"], entry.NO2),
+                            "O3" : self.__compute_risk(risks["LUNGC"]["O3"], self.WHOThresholds["O3"], entry.O3),
+                            "SO2" : self.__compute_risk(risks["LUNGC"]["SO2"], self.WHOThresholds["SO2"], entry.SO2)
+                        },
+                        "COPD" : {
+                            "PM25" : self.__compute_risk(risks["COPD"]["PM25"], self.WHOThresholds["PM25"], entry.PM25),
+                            "PM10" : self.__compute_risk(risks["COPD"]["PM10"], self.WHOThresholds["PM10"], entry.PM10),
+                            "NO2" : self.__compute_risk(risks["COPD"]["NO2"], self.WHOThresholds["NO2"], entry.NO2),
+                            "O3" : self.__compute_risk(risks["COPD"]["O3"], self.WHOThresholds["O3"], entry.O3),
+                            "SO2" : self.__compute_risk(risks["COPD"]["SO2"], self.WHOThresholds["SO2"], entry.SO2)
+                        },
+                        "IHD" : {
+                            "PM25" : self.__compute_risk(risks["IHD"]["PM25"], self.WHOThresholds["PM25"], entry.PM25),
+                            "PM10" : self.__compute_risk(risks["IHD"]["PM10"], self.WHOThresholds["PM10"], entry.PM10),
+                            "NO2" : self.__compute_risk(risks["IHD"]["NO2"], self.WHOThresholds["NO2"], entry.NO2),
+                            "O3" : self.__compute_risk(risks["IHD"]["O3"], self.WHOThresholds["O3"], entry.O3),
+                            "SO2" : self.__compute_risk(risks["IHD"]["SO2"], self.WHOThresholds["SO2"], entry.SO2)
+                        }
+                    }
+
+                logger.debug(f"Computed disease risks for town {entry.town}: {body}")
+                response.append(body)
+
+            return response
 
 
-
-
-            return results
-
-
-
-        @self.app.get("/getDiseaseRisks")
-        def get_disease_risks(town: str, session: Session = Depends(self.get_session)):
+        @self.app.post("/getDiseaseRisks")
+        def get_disease_risks(payload: DiseaseRiskPayload, session: Session = Depends(self.get_session)):
             ''' Will Retrieve the towns Relative Risk based on NO2, PM2.5 & PM10 readings.'''
-     
+
+
+            town = payload.town
+            risks = payload.risks
+
+            logger.debug(f"Received payload for disease risks: {payload.risks}")
 
             # Get Average NO2, PM10 and PM2.5 readings for the town
             query = select(
-                func.round(func.avg(Pollutants.o_ugm3), 3).label("o3"),
-                func.round(func.avg(Pollutants.no2_ugm3), 3).label("no2"),
-                func.round(func.avg(Pollutants.pm10_ugm3), 3).label("pm10"),
-                func.round(func.avg(Pollutants.pm25_ugm3), 3).label("pm25")
+                func.round(func.avg(Pollutants.so_ugm3), 3).label("SO2"),
+                func.round(func.avg(Pollutants.o_ugm3), 3).label("O3"),
+                func.round(func.avg(Pollutants.no2_ugm3), 3).label("NO2"),
+                func.round(func.avg(Pollutants.pm10_ugm3), 3).label("PM10"),
+                func.round(func.avg(Pollutants.pm25_ugm3), 3).label("PM25")
             ).where(Pollutants.town == town)
  
             result = session.exec(query).first()
 
-            contents = {"RES" : {
-                    "NO2": self.__compute_risk(self.RES_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
-                    "PM10": self.__compute_risk(self.RES_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.RES_RR["PM25"], self.WHOThresholds["PM25"], result.pm25),
-                    "O3": self.__compute_risk(self.RES_RR["O3"], self.WHOThresholds["O3"], result.o3)
-            }, "CVD" : {
-                    "NO2": self.__compute_risk(self.CVD_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
-                    "PM10": self.__compute_risk(self.CVD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.CVD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
-            }, "IHD" : {
-                    "NO2": self.__compute_risk(self.IHD_RR["NO2"], self.WHOThresholds["NO2"], result.no2),
-                    "PM10": self.__compute_risk(self.IHD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.IHD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)},
-                "LUNGC" : {
-                    "NO2": self.__compute_risk(self.LUNGC_RR["NO2"], self.WHOThresholds["NO2"], result.no2), 
-                    "PM10": self.__compute_risk(self.LUNGC_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.LUNGC_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
-            },
-            "COPD" : {
-                    "NO2": self.__compute_risk(self.COPD_RR["NO2"], self.WHOThresholds["NO2"], result.no2), 
-                    "PM10": self.__compute_risk(self.COPD_RR["PM10"], self.WHOThresholds["PM10"], result.pm10),
-                    "PM25": self.__compute_risk(self.COPD_RR["PM25"], self.WHOThresholds["PM25"], result.pm25)
-            }}
+            map = {
+                "SO2" : result.SO2,
+                "NO2" : result.NO2,
+                "PM10" : result.PM10,
+                "PM25" : result.PM25,
+                "O3" : result.O3
+            }
 
+            contents = {}
+
+            for key in risks.keys():
+                tempRisks = {"SO2" : 0, "NO2" : 0, "PM10" : 0, "PM25" : 0, "O3" : 0}
+                for pol in ["SO2", "NO2", "PM10", "PM25", "O3"]:
+                    
+                    # logger.debug(f"Processing disease: {key} for pollutant {pol}")
+                    result = self.__compute_risk(risks[key][pol], self.WHOThresholds[pol], map[pol])
+                    tempRisks[pol] = result
+                    # logger.debug(f"Computed risk for disease {key} and pollutant {pol}: {result}")
+                
+                # logger.debug(f"Computed risks for disease {key}: {tempRisks}")
+                contents[key] = tempRisks
+
+            # logger.debug(f"Computed disease risks: {contents}")
             return contents
 
 

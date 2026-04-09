@@ -1,14 +1,15 @@
-import {useEffect, useState, Suspense, useMemo} from 'react';
+import {useEffect, useState, Suspense, useMemo, useContext} from 'react';
 import axios from 'axios';
 import { BarChart} from '@mui/x-charts';
 import { ChartsReferenceLine } from '@mui/x-charts/ChartsReferenceLine';
 import { diseaseNames, diseases, WHOThresholds } from '../Backend/PollutionInfo';
 import Box from "@mui/material/Box";
 import { render } from 'katex';
-
+import {RisksContext} from '../../IndexMap.js';
 
 export default function TownPollutantBoard(towns) {
 
+    const {relativeRiskData} = useContext(RisksContext);
 
     const [pollutant, setPollutant] = useState("SO2");
 
@@ -35,7 +36,7 @@ export default function TownPollutantBoard(towns) {
         console.log("computing" + JSON.stringify(towns["towns"]));
 
         // Compute highest pollutant holder
-        let res =  await axios.post(`/getPollutantAvgTowns/`, {"towns": towns.towns, "pollutant": pollutant})
+        let res =  await axios.post(`/getPollutantAvgTowns/`, {"towns": towns.towns, "pollutant": pollutant});
         
         let rawData = res.data;
 
@@ -63,7 +64,7 @@ export default function TownPollutantBoard(towns) {
 
     const computeDiseases = async (towns) => {
 
-        let res = await axios.post("/getDiseaseRisksTowns" , towns)
+        let res = await axios.post("/getDiseaseRisksTowns" , {"towns": towns, "risks": relativeRiskData});
 
         const data = res.data;
 
@@ -208,7 +209,7 @@ export default function TownPollutantBoard(towns) {
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("COPD")}>COPD</button>
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("CVD")}>Cardiovascular</button>
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("IHD")}>IHD</button>
-                <button className={"pollutant-filter-button"} onClick={() => setDisease("LUNG")}>Lung Cancer</button>
+                <button className={"pollutant-filter-button"} onClick={() => setDisease("LUNGC")}>Lung Cancer</button>
             </div>
 
             
