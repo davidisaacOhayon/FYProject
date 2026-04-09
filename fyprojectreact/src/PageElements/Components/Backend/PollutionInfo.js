@@ -10,6 +10,22 @@ export const pollutantColors = {
     'O3': "#bf00ff"
 };
 
+export const diseases = [
+    "RES",
+    "CVD",
+    "LUNGC",
+    "COPD",
+    "IHD"
+]
+
+export const diseaseNames = {
+    "RES" : "Respiratory Disease",
+    "CVD" : "Cardiovascular Disease",
+    "LUNGC" : "Lung Cancer",
+    "COPD" : "Chronic Obstructive Pulmonary Disease",
+    "IHD" : "Isachemic Heart Disease"
+}
+
 // Limits are in ug/m^3
 export const WHOThresholds = {
     "SO2" : 40,

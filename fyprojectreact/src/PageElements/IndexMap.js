@@ -20,8 +20,11 @@ import { PollutionLevelColorGrade, WHOThresholds, pollutantDBKeyMap } from './Co
 import  Legend  from './Components/Legend.js';
 import PollutionMap from './Components/Layers/PollutionMap.js';
 import AnnualPollutionMap from './Components/Layers/AnnualPollutionMap.js';
+import FiltersInput from './Components/Filters/FilterInput.js';
 
 const OverlayContext = createContext(null);
+
+export const RisksContext = createContext(null);
  
 export default function IndexMap() {
   
@@ -42,7 +45,6 @@ export default function IndexMap() {
   // Toggled town layer
   const [townLayerToggled, toggleTownLayer] = useState(false);
 
-
   // Current town being hovered
   const [hoveredTown, setHovered] = useState(null);
  
@@ -52,6 +54,14 @@ export default function IndexMap() {
 
   // Town Data for legend when hovered. 
   const [legendTown, setLegendTown] = useState(null);
+
+  const [relativeRiskData, setRelativeRiskData] = useState({ 
+    "COPD" : {  SO2: 0, NO2: 1.04, PM25: 1.14, PM10: 1.22, O3: 0},
+    "LUNGC" : { SO2: 0, NO2: 1.07, PM25: 1.09, PM10: 1.10, O3: 0},
+    "CVD" : { SO2: 0, NO2: 1.05, PM25: 1.14, PM10: 1.06, O3: 0},
+    "RES" : { SO2: 0, NO2: 1.05, PM25: 1.14, PM10: 1.12, O3: 1.05},
+    "IHD" : { SO2: 0, NO2: 1.05, PM25: 1.14, PM10: 1.06, O3: 0}
+  });
 
   // Contains info of all pollutants we will monitor
   const [pollutants, setPollutants] = useState({
@@ -104,11 +114,9 @@ export default function IndexMap() {
 
   //////// LOGIC FUNCTIONS
   
-
-
   // HOVERED TOWN USE EFFECT HANDLER
   useEffect(() => {
-  const layers = [PollutionRegionlayer];
+  const layers = [TownsLayer];
 
 
   if (hoveredTown) {
@@ -243,16 +251,14 @@ export default function IndexMap() {
   }));
 
   // Polygon layer to overlay all Maltese town
-  let PollutionRegionlayer = useMemo(() => new PolygonLayer({
+  let TownsLayer = useMemo(() => new PolygonLayer({
     id: "PolygonTownLayer",
     data: mData,
     getPolygon : d => d.geometry.coordinates[0][0],
     getLineColor:[255, 255, 255],
-    // getFillColor: d => [255, Math.random() * 255 , 50, 120],
-    // getFillColor:
     getLineWidth: 10,
     lineWidthMinPixels: 1,
-
+    // ON CLICK EVENT LISTENER
     onClick: (info, event) => {
       if (info.object){
         // If overlay is open, check if click is within overlay bounds
@@ -269,17 +275,15 @@ export default function IndexMap() {
             return;
           }
         }
-
         // Set town overlay args with name, and viewport coordinates
         setOverlayArgs({townName: info.object.properties.plain_name, xPos: Math.floor(info.x), yPos: Math.floor(info.y)});
         setMapActive(false);
       }
     },
-
+    // ON HOVER EVENT LISTENER
     onHover: (info, event) => {
       // If object info exists
       if (info.object && !overlayArgs){
-        // console.log(info.index + info.object.properties.locality_n)
         // Highlight town
         setHovered(info.object.geometry.coordinates[0])
       }else{
@@ -302,9 +306,6 @@ export default function IndexMap() {
     
   }), [townLayerData, pollutants]); 
 
-
-
-
   let hoverLayer = useMemo(() => {
 
       if (hoveredTown) {
@@ -321,8 +322,8 @@ export default function IndexMap() {
 
     let baseLayers = [];
 
-    if (PollutionRegionlayer){
-      baseLayers.push(PollutionRegionlayer);
+    if (TownsLayer){
+      baseLayers.push(TownsLayer);
     }
 
 
@@ -343,19 +344,47 @@ export default function IndexMap() {
 
     return baseLayers;
 
-  }, [PollutionRegionlayer, townLayerData, pollutants, townLayerToggled])
+  }, [TownsLayer, townLayerData, pollutants, townLayerToggled])
 
+   ///////// RENDERING
 
-  // useEffect(() => { 
-  //   if (townLayerToggled){
-  //     console.log("Town layer is toggled")
-  //   }else {
-  //     console.log("town layer is untoggled")
-  //   }
-  //   setInterval(() => {
-  //     console.log(layers)
-  //   }, [2000])
-  // }, [layers, townLayerToggled])
+   const renderPollutantFilter = () => {
+    return ( 
+    <>
+      <h2>Pollution Level Grading</h2>
+      <hr></hr>
+    
+      <FilterSelection data={pollutants} setData={setPollutants} />
+      <div className={"filters-options-main"}>
+        <h3>Date Selection:</h3>
+        <input disabled={polAnnum} type="date" id="date" defaultValue={mainDate} onChange={(e) => {setDate(e.target.value)}}></input>
+        <label for={"annum"}> Annual Average:</label>
+        <input type="checkbox" id="annum" name="annum" onChange={(e) => setPolAnnum(e.target.checked)}></input>
+        
+        <label for={"pollution"}>Toggle Filter Mapping:</label>
+        <input placeholder={"Pollution Layer"} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
+      </div>
+    </>
+    )
+   }
+
+   const renderSettingsFilter = () => {
+    return (
+      <>
+        <h2>Settings</h2>
+        <hr></hr>
+        <h4>Disease Mortality Relative Risks</h4>
+        <p>The Following are the relative risks of disease mortality based on each pollutants.</p>
+        <p>The relative risks are expressed in the form of X per 10µg/m³</p>
+        <FiltersInput data={relativeRiskData} setData={setRelativeRiskData}/>
+       <span className={'warning-box'}> <p>Note: The relative risks used by default are based on the WHO Hrapie-2 Project. It should be known that the accuracy
+          of these relative risks is not guranteed as they are based on studies with different environmental conditions than those in Malta.
+          If possible, these RRs should be ammended to be more representative of the Maltese population and atmosphere for best accurate results.
+        </p> </span>
+      </>
+    )
+   }
+ 
 
   return (
     <>
@@ -364,28 +393,17 @@ export default function IndexMap() {
         <div className="map-controls">
           <h2 className="filter-title">Controls</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
+          <button onClick={() => setFilter('relativeRiskFilter')} className={selectedFilter == 'relativeRiskFilter' ? "map-control-btn active" : "map-control-btn"}>Settings</button>
           <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Dashboard</button>
         </div>
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
-          <h2>Pollution Filter</h2>
-          <hr></hr>
-          {selectedFilter == 'pollutantFilter' ? <FilterSelection useRef={pollutantFilter} data={pollutants} setData={setPollutants} /> : null}
-          <div>
-            <h3>Date Selection:</h3>
-            <input disabled={polAnnum} type="date" id="date" defaultValue={mainDate} onChange={(e) => {
-              setDate(e.target.value)}}></input>
-            <label for={"annum"}> Annual Average:
-            <input type="checkbox" id="annum" name="annum" onChange={(e) => setPolAnnum(e.target.checked)} ></input>
-            </label>
-          </div>
-            <label for={"pollution"}> Pollution Layer:
-              <input placeholder={"Pollution Layer "} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
-            </label>
+          {selectedFilter == 'pollutantFilter' ? renderPollutantFilter() : null}
+          {selectedFilter == 'relativeRiskFilter' ? renderSettingsFilter() : null}
         </div>
       </div>
 
       <Suspense fallback={<p>Loading...</p>}>
-       {overlayArgs != null ? <TownOverview overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
+         {overlayArgs != null ? <TownOverview riskRatios={relativeRiskData} overlayRef={overlay} args={overlayArgs} setArgs={setOverlayArgs} setMapActive={setMapActive}/> : null}
       </Suspense>
       <Map
         id="MainMap"
@@ -394,7 +412,10 @@ export default function IndexMap() {
       />
  
     </DeckGL>
-    {dashboardActive ? <StatisticsDashboard /> : null}
+    <RisksContext.Provider value={{relativeRiskData}}>
+       {dashboardActive ? <StatisticsDashboard /> : null}
+    </RisksContext.Provider>
+   
     {townLayerToggled && <Legend title={"Pollution Level Legend"} lim={WHOThresholds[Object.keys(pollutants).find(key => pollutants[key].flag == true)]} pol={Object.keys(pollutants).find(key => pollutants[key].flag == true)}/>}
 
     </>

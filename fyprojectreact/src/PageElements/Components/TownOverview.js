@@ -22,10 +22,7 @@ import RiskBar from "./DashboardComponents/RiskBar";
 
  
 
-export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
-
-
-
+export default function TownOverview({riskRatios, args, overlayRef, setArgs, setMapActive}){
 
     // Contains retrieved data from requests
     const [pollutantReadings, setPollutants] = useState(null);
@@ -34,13 +31,13 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const [monthRange, setMonthRange] = useState([0, 11]);
 
     // Contains applied pollutants for filtering
-    const [pollutantFilter, setPollutantFilter] = useState([]);
+    const [pollutantFilter, setPollutantFilter] = useState(["SO2"]);
 
     // Contains applied display options of overview
     const [displayOption, setDisplayOption] = useState('pollution');
     
     // List down each pollutant key
-    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3'];
+    const pollutants = ['SO2', 'NO2', 'PM25','PM10', 'O3'];
 
     // Display Data for graph visuals (Y-Axis)
     const [displayData, setDisplayData] = useState(null);
@@ -77,7 +74,6 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     }
 
-
     const marks = [
         { value: 0, label: "Jan" },
         { value: 1, label: "Feb" },
@@ -92,6 +88,25 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         { value: 10, label: "Nov" },
         { value: 11, label: "Dec" },
     ];
+
+
+    useEffect(() => {
+        if( args.townName == null){
+            return
+        }
+
+
+        // Retrieve pollutant info on town
+        axios.get(`/getPollutantVolTown/?town=${args.townName}`)
+        .then(res => {
+            if (res.data) {
+            setPollutants(res.data) 
+            processPollutantData()
+            }
+        }) 
+        .catch(err => console.log(err.res.data))
+    }, [])
+    
     // Process pollutant data for risk analysis on potential diseases
     useEffect(() => {
         if( args.townName == null){
@@ -109,7 +124,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         .catch(err => console.log(err.res.data))
 
         // Retrieve risks calculated by pollutant readings
-        axios.get(`/getDiseaseRisks/?town=${args.townName}`)
+        axios.post(`/getDiseaseRisks/`, {"town": args.townName, "risks": riskRatios})
         .then(res => {
             if (res.data) {
                 setRiskData(res.data);
@@ -122,7 +137,10 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         axios.get(`/getPollutantAvgsTown?town=${args.townName}`)
         .then(
             res => {
-                setPolAverages(res.data);
+                if(res.data) {
+                    setPolAverages(res.data);
+                }
+                
             }
         )
         .catch(err => console.log(err.res.data))
@@ -263,11 +281,15 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
     const computeRelativeRisk = (pol, type) => {
 
-        const data = riskData[type];
+        let rawdata = riskData[type];
+
+        // Filter out 0 values which indicate no risk calculated for pollutant
+        var data = Object.fromEntries(Object.entries(rawdata).filter(([key, value]) => value !== 0));
         
         return <RiskBar title={pol} perc={data[pol]}/>
 
     }
+    
     
     const formatRisk = (input) => {
        return <h4>{input > 1 ? `+${((input - 1) * 10).toFixed(2)}% ` : "N/A" }</h4>
@@ -275,22 +297,35 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
         
     const diseaseOverview = () => {
 
+        if (!riskData) {
+            return (<>
+                <h1>
+                    No Data Available for analysis.
+                </h1>
+            </>)
+        }
+
         return(
                 <div className={"disease-overview"}> 
                     <h2>Disease Mortality Overview</h2>
                     <hr></hr>
                     <span className={'warning-box'}>Note: Percentages denote the town population's increased long-term mortality risk relative to the WHO exposure limits.
                         The Relative Risks have been calculated using CRFs provided by the <a href={"https://www.who.int/publications/i/item/9789289062633"}>HRAPIE-2 Project</a> WHO.  
+                        It should be noted that these risks are highly suggestive and may not be sufficiently accurate.
+                        <br></br>
+                        <br></br>
+                         If available, you can change the relative risks in the settings bar. 
                     </span>
                     <br></br>
 
                     <h3>Risk Based on Annual Average</h3>
+                    <hr></hr>
                     <div className={"disease-overview-container"}>
                         <div className={"disease-overview-box"}>
                             <h3>Respiratory Disease Mortality</h3>
                             <img className={"disease-logo"} src={RES}></img>
                             <div className={"disease-overview-value"}>{
-                                Object.keys(globalRR_RES).map(pol => {
+                                Object.keys(riskData["RES"]).map(pol => {
                                     return <div key={pol}>
                                         {computeRelativeRisk(pol, "RES")}
                                         </div>
@@ -302,7 +337,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                             <h3>Cardiovascular Disease Mortality</h3>
                             <img className={"disease-logo"} src={CVD}></img>
                             <div className={"disease-overview-value"}>{
-                                    Object.keys(globalRR_CVD).map(pol => {
+                                    Object.keys(riskData["CVD"]).map(pol => {
                                         return <div key={pol}>
                                             {computeRelativeRisk(pol, "CVD") }
                                             </div>
@@ -314,34 +349,46 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         <h3>Specific Disease Mortalities</h3>
                         <br></br>
                         <table>
-                            <tr>
-                                <th>Disease</th>
-                                <th>NO2</th>
-                                <th>PM10</th>
-                                <th>PM25</th>
-                                <th>O3</th>
-                            </tr>
-                            <tr>
-                                <td>Lung Cancer</td>
-                                <td>{riskData ?  formatRisk(riskData["LUNGC"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["LUNGC"]["O3"]) : "Loading"}</td>
-                            </tr>
-                            <tr>
-                                <td>IHD</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
-                            </tr>
-                            <tr>
-                                <td>COPD</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["NO2"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["PM10"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["PM25"]) : "Loading"}</td>
-                                <td>{riskData ? formatRisk(riskData["COPD"]["O3"]) : "Loading"}</td>
-                            </tr>
+                            <thead>
+                                <tr>
+                                    <th>Disease</th>
+                                    <th>NO2</th>
+                                    <th>PM10</th>
+                                    <th>PM25</th>
+                                    <th>O3</th>
+                                    <th>SO2</th>
+                                </tr>
+                            </thead>
+                            { riskData &&
+
+                            <tbody>
+                                <tr>
+                                    <td>Lung Cancer</td>
+                                    <td>{riskData ?  formatRisk(riskData["LUNGC"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["O3"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["LUNGC"]["SO2"]) : "Loading"}</td>
+                                </tr>
+                                <tr>
+                                    <td>IHD</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["SO2"]) : "Loading"}</td>
+                                </tr>
+                                <tr>
+                                    <td>COPD</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["NO2"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["PM10"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["PM25"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["IHD"]["O3"]) : "Loading"}</td>
+                                    <td>{riskData ? formatRisk(riskData["COPD"]["SO2"]) : "Loading"}</td>
+                                </tr>
+                            </tbody>
+
+                            }
                         </table>
 
                     </div>
@@ -384,13 +431,17 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                             <p>The following table contains all the Relative Risks provided by the HRAPIE-2 study.</p>
 
                             <table className={"guideline-table"}>
-                                <tr>
-                                    <th>Disease</th>
-                                    <th>PM2.5</th>
-                                    <th>PM10</th>
-                                    <th>O3</th>
-                                    <th>NO2</th>
-                                </tr>
+                                
+                                <thead>
+                                    <tr>
+                                        <th>Disease</th>
+                                        <th>PM2.5</th>
+                                        <th>PM10</th>
+                                        <th>O3</th>
+                                        <th>NO2</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                 <tr>
                                     <td>Respiratory Related</td>
                                     <td>{globalRR_RES["PM25"]} per 10 µg/m³</td>
@@ -426,6 +477,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                                     <td>N/A</td>
                                     <td>{LUNGC_RR["NO2"]} per 10 µg/m³</td>
                                 </tr>
+                                </tbody>
                             </table>
                             <p> 
                                 The Relative Risks extracted here are then used in the exponential relative risk model to calculate each individual relative risk given by 
@@ -443,6 +495,14 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
     const pollutionOverview = () => {
     
 
+        if (!pollutantReadings || !displayData) {
+            return (<>
+                <h1>
+                    No Data Available for analysis.
+                </h1>
+            </>)
+
+        }
 
         return( 
             <>
@@ -460,7 +520,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
                         valueFormatter: (date) => {
                             const month = date.getMonth();
                             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            return `${monthNames[month]} ${date.getFullYear().toString()}`;
+                            return `${monthNames[month]} \n ${date.getFullYear().toString()}`;
                         }
                         }
                     ]}
@@ -506,7 +566,7 @@ export default function TownOverview({args, overlayRef, setArgs, setMapActive}){
 
 
                 <Suspense fallback={<h2>Loading</h2>}>
-                    <TownClustering pollutant={"NO2"} polTown={args.townName}/>
+                    <TownClustering  polTown={args.townName}/>
                 </Suspense>
 
                 

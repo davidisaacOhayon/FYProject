@@ -7,6 +7,7 @@ import axios from 'axios';
 import TownOverviewDashboard from './Components/DashboardComponents/TownOverviewDashboard';
 import { pollutantDBKeyMap, pollutantColors} from './Components/Backend/PollutionInfo';
 import Slider from '@mui/material/Slider';
+
 // TO DO FOR LATE STAGE:
 // OPTIMIZE YEARLYDATA AS EACH TOWN IS BEING GIVEN THEIR OWN YEARLY DATA OBJECT, COULD BE
 // MADE GLOBALLY.
@@ -44,7 +45,7 @@ export default function StatisticsDashboard(){
     const [isLoading, setLoading] = useState(false);
 
     // List down each pollutant key
-    const pollutants = ['SO2', 'NO', 'NO2', 'PM25','PM10', 'O3']
+    const pollutants = ['SO2', 'NO2', 'PM25','PM10', 'O3']
 
     const townNames = [
     "San Lawrenz",
@@ -109,11 +110,12 @@ export default function StatisticsDashboard(){
     "Santa Venera",
     "Qormi"
     ];
+    
+    useEffect(() => {   
+        if (townFilter.length === 0) {
+            return;
+        }
 
- 
-
- 
-    useEffect( () => {   
         const mainLoader = async () => {
             await globalGetPollutantData();
         }
@@ -125,15 +127,14 @@ export default function StatisticsDashboard(){
  
     const globalGetPollutantData =  async () => {
 
-        townFilter.forEach(town => {
-            // Retrieve pollutant info on town
-            console.log(`Requesting ${town}`)
-            axios.get(`/getPollutantVolTown/?town=${town}`)
-            .then(res => {processPollutantData(town, res.data)})
-            .catch(err => console.log(err.res.data))
- 
-        })
+        const res = await axios.post('/getPollutantVolTowns/' , {"towns" : townFilter});
+
+        const rawData = res.data;
         
+
+        townFilter.forEach(town => {
+            processPollutantData(town, rawData[town]);
+        })
 
         setTimeout(() => {
             setLoading(false);
@@ -207,7 +208,6 @@ export default function StatisticsDashboard(){
             setGlobalData(prev => ({...prev,
                                     [town] : object}));
     
-            console.log("global data changed");
     
         }
 
@@ -220,7 +220,8 @@ export default function StatisticsDashboard(){
     }
 
     const applyTown = (town) => {
-        setLoading(true); 
+        setLoading(true);
+        setGlobalData({}); 
         if (!checkActiveTown(town)) {
             setTownFilter(prev => [...prev, town])
         }else{
@@ -261,10 +262,13 @@ export default function StatisticsDashboard(){
                     </ul>
                 </div>
                 <div className={'town-dashboards-container'}>
-                    {isLoading ? <h1>Loading</h1> : townFilter.map((town) => {
-                        console.log(`Rendering dashboard for ${town} at loading ${isLoading}`);
+                    {!isLoading && globalData != null ?  townFilter.map((town) => {
+                        const data = globalData[town];
+                        if (!data) {
+                            return null;
+                        }
                         return <TownOverviewDashboard  town={town} data={globalData[town]["DisplayData"]} dateData={globalData[town]["YearlyData"]}/>
-                    })}
+                    }) : <h1>Loading</h1> }  
                 </div>
             </div>
             <div className={'year-range-filter'}>
@@ -288,7 +292,7 @@ export default function StatisticsDashboard(){
                             },
                         }}
                     />
-                </div>
+            </div>
 
             
             {townFilter.length != 0 && !isLoading ? <TownPollutantBoard towns={townFilter}/> : null}

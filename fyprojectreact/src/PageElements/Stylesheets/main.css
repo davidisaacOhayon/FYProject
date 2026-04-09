@@ -54,26 +54,39 @@ h1{
     border: 1px solid white;
 }
  
+.filters-options-main{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    align-items: flex-start;
+}
 .filters-content{
     position: relative;
     border-radius: 5px;
     width: fit-content;
     right: 10px;
     min-width: 28vw;
+    max-width: 50vw;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: #30303098;
+    background-color: #303030;
     color: white;
     height: fit-content;
     min-height: 25vh;
-    margin-top: 20%;
+    margin-top: 20px;
     transition: 0.50s ease-in;
     opacity: 0%;
     box-sizing: border-box;
     gap: 10px;
     padding: 20px;
+}
+.filters-content input{
+    width: 50%;
+    height: 30px;
+    border-radius: 5px;
+    border: none;
+    padding: 5px;
 }
 
 .filters-content.active{

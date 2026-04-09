@@ -1,6 +1,7 @@
 import {react, useState, useEffect} from 'react';
 
 import '../../Stylesheets/filters.css'
+import { polAcronymNameMap } from '../Backend/PollutionInfo';
 
 export default function FiltersSelection({data, setData}){
 
@@ -35,9 +36,10 @@ export default function FiltersSelection({data, setData}){
         <>
             <ul className={"filter-selection-list"}>
                     {Object.values(data).map((element, index) => 
-                        <label>{element["name"]}
-                            <input onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']} type={"checkbox"} value={element['name']}/>
-                        </label>
+                        <>
+                        <label className={"filter-label"} for={element['name']}>{polAcronymNameMap[element['name']] || element["name"]}</label>
+                        <input className={"filter-input"}onChange={() => {changeData(index)}} name={element['name']} checked={element['flag']} type={"checkbox"} value={element['name']}/> 
+                        </>
 
                     )}
 
