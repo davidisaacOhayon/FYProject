@@ -6,8 +6,6 @@ export default function TownOverviewDashboard({town, data, dateData}){
 
  
 
- 
-
     return(
         <div className={"town-item"}>
             <h2>{town}</h2>

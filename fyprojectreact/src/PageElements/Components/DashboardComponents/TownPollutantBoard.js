@@ -154,7 +154,7 @@ export default function TownPollutantBoard(towns) {
                             axis="y"          // because threshold is horizontal
                             stroke="red"      // line color
                             strokeDasharray="4 2"
-                            lineStyle={{ stroke: 'red', strokeWidth: 2, strokeDasharray: '5 5' }} // optional dashed style
+                            lineStyle={{ stroke: 'red', strokeWidth: 2, strokeDasharray: '5 5' }}  
                         /></BarChart>  </Box>: <p>Loading...</p>
                         }
                         <h2>{pollutant} threshold as declared by WHO: {WHOThresholds[pollutant]} µg/m³</h2>

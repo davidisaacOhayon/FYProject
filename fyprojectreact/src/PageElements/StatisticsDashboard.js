@@ -5,6 +5,7 @@ import {useState, useEffect, Suspense} from 'react';
 import TownPollutantBoard from './Components/DashboardComponents/TownPollutantBoard';
 import axios from 'axios';
 import TownOverviewDashboard from './Components/DashboardComponents/TownOverviewDashboard';
+import TownOverviewDashboardCombined from './Components/DashboardComponents/TownOverviewDashboardCombined';
 import { pollutantDBKeyMap, pollutantColors} from './Components/Backend/PollutionInfo';
 import Slider from '@mui/material/Slider';
 
@@ -32,7 +33,7 @@ export default function StatisticsDashboard(){
 
     const [monthRange, setMonthRange] = useState([0,11]);
 
-    const [globalData, setGlobalData] = useState({});
+    const [globalData, setGlobalData] = useState(null);
 
     // Contains applied pollutants for filtering
     const [pollutantFilter, setPollutantFilter] = useState([]);
@@ -40,7 +41,9 @@ export default function StatisticsDashboard(){
     // Contains applied towns for filtering
     const [townFilter, setTownFilter] = useState([]);
 
-    const [townsProcessed, setTownsProcessed] = useState([]);
+    // 0 : Divided Graph, 1 : Combined Graph
+    const [graphView, setGraphView] = useState(0);
+
 
     const [isLoading, setLoading] = useState(false);
 
@@ -123,6 +126,7 @@ export default function StatisticsDashboard(){
         mainLoader();
         
     }, [townFilter, pollutantFilter, monthRange]);
+
 
  
     const globalGetPollutantData =  async () => {
@@ -230,10 +234,30 @@ export default function StatisticsDashboard(){
     }
 
     const applyPollutant = (pol) => {
+        if ( graphView == 1) {
+            setPollutantFilter([pol])
+            return;
+        }
+
         if (!checkActivePollutant(pol)) {
             setPollutantFilter(prev => [...prev, pol])
         }else{
             setPollutantFilter(prev => [...prev.filter(x => pol !== x)])
+        }
+    }
+
+    const renderGraphingContent = () => {
+        if (graphView === 1){
+            const tempData = globalData;
+            return <TownOverviewDashboardCombined pollutant={pollutantFilter[0]} data={globalData} YearlyData={globalData[Object.keys(globalData)[0]]?.YearlyData || []}/>
+        } else {
+            return townFilter.map((town) => {
+                const data = globalData[town];
+                if (!data) {
+                    return null;
+                }
+                return <TownOverviewDashboard  town={town} data={globalData[town]["DisplayData"]} dateData={globalData[town]["YearlyData"]}/>
+            })
         }
     }
 
@@ -242,12 +266,18 @@ export default function StatisticsDashboard(){
         <div className={"statistics-monitor-main"}>
             <h1>Statistics Dashboard</h1>
             <hr></hr>
-            <ul className={'dashboard-pollutant-filters'}>
-                    {pollutants.map((e, index) => 
-                        <li key={index} style={ checkActivePollutant(e) ? {backgroundColor : pollutantColors[e]} : {backgroundColor : "#1f1f1f"}} className={checkActivePollutant(e) ? 'dsh-pol-btn active' : 'dsh-pol-btn'}>
-                         <button onClick={() => applyPollutant(e)}>{e}</button>
-                        </li>
-                    )}
+            <br></br>
+            <div className={"dashboard-filters"}>
+                <button  style={ graphView === 0 ? {backgroundColor : "orange"} : {backgroundColor : "#1f1f1f"}} className={graphView === 0 ? "dsh-btn active" : "dsh-btn"} onClick={() => setGraphView(0) }>Divided Graphs</button>
+                <button style={ graphView === 1 ? {backgroundColor : "orange"} : {backgroundColor : "#1f1f1f"}} className={graphView === 1 ? "dsh-btn active" : "dsh-btn"} onClick={() => setGraphView(1) && setPollutantFilter([])}>Combined Graphs</button>    
+            </div>
+            <br></br>
+            <ul className={'dashboard-filters'}>
+                {pollutants.map((e, index) => 
+                    <li key={index} style={ checkActivePollutant(e) ? {backgroundColor : pollutantColors[e]} : {backgroundColor : "#1f1f1f"}} className={checkActivePollutant(e) ? 'dsh-btn active' : 'dsh-btn'}>
+                        <button onClick={() => applyPollutant(e)}>{e}</button>
+                    </li>
+                )}
             </ul>
             <br></br>
             <div className={"dashboard-towns"}>
@@ -262,13 +292,7 @@ export default function StatisticsDashboard(){
                     </ul>
                 </div>
                 <div className={'town-dashboards-container'}>
-                    {!isLoading && globalData != null ?  townFilter.map((town) => {
-                        const data = globalData[town];
-                        if (!data) {
-                            return null;
-                        }
-                        return <TownOverviewDashboard  town={town} data={globalData[town]["DisplayData"]} dateData={globalData[town]["YearlyData"]}/>
-                    }) : <h1>Loading</h1> }  
+                    { !isLoading && globalData != null ?  renderGraphingContent() : <h1>Loading</h1> }
                 </div>
             </div>
             <div className={'year-range-filter'}>

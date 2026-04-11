@@ -290,8 +290,8 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         return <RiskBar title={pol} perc={data[pol]}/>
 
     }
-    
-    
+
+
     const formatRisk = (input) => {
        return <h4>{input > 1 ? `+${((input - 1) * 10).toFixed(2)}% ` : "N/A" }</h4>
     }

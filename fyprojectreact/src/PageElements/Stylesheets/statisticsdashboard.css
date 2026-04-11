@@ -22,7 +22,7 @@
     font-weight: 900;
 }
 
-.dashboard-pollutant-filters{
+.dashboard-filters{
     display: flex;
     list-style: none;
     width: clamp(10rem, 25rem, 35rem);
@@ -36,12 +36,11 @@
 .dashboard-towns{
     width: 100%;
     display: flex;
-    height: clamp(20vh, 60vh, 65vh);
+    height: clamp(40vh, 70vh, 85vh);
     background-color:#191919;
 }
 .dashboard-town-filter-container{
     height: 100%;
-    max-height: 60vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -50,7 +49,7 @@
     width: 20%;
 }
 .dashboard-town-filter{ 
-    height: 85%;
+    height: 100%;
     width: 80%;
     margin: 0px;
     padding: 0px;
@@ -64,13 +63,15 @@
     height: auto;
     gap: 1%;
 }
-.dsh-pol-btn {
+.dsh-btn {
     flex: 1;
     min-width: 0;
+    border: none;
+    color: white;
     width: 1vw;
 }
 
-.dsh-pol-btn button{
+.dsh-btn button{
     width: 100%;
     min-width: 0;
     height: 100%;
@@ -118,8 +119,8 @@
 .town-dashboards-container{
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-rows: repeat(auto-fit, minmax(400px, 1fr));
     gap: clamp(2%, 4%, 5%);
     margin: 20px;
     overflow-x: scroll;
@@ -127,6 +128,10 @@
 
 
 /* -------- Town Pollutant Board */
+.towns-graph-overview{
+    width: 100%;
+    height: 100%;
+}
 .town-pollutant-entries{
     width: 100%;
     height: clamp(20vh, 80vh, 60vh);
