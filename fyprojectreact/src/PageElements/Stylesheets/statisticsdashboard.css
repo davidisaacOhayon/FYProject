@@ -58,7 +58,12 @@
     background-color: #1c1c1c;
     box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.085);
 }
-
+.board-disease-filter{
+    width: clamp(10vw, auto, 25vw);
+    display: flex;
+    height: auto;
+    gap: 1%;
+}
 .dsh-pol-btn {
     flex: 1;
     min-width: 0;
@@ -151,11 +156,12 @@
 }
 
 .pollutant-filter-button{
-    width: clamp(5rem, 6vw, 15rem);
-    background-color: black;
+    width: clamp(10rem, 6vw, 15rem);
+    background-color: rgb(47, 47, 55);
     color: white;
     border: none;
-    height: clamp(3vh, 3vh, 5vh);
+    font-weight: 500;
+    height: clamp(4vh, 5vh, 5vh);
 }
 .town-pollutant-entry{
     width: 100%;
@@ -197,4 +203,44 @@
     border: 0.1px white solid;
     height: 50px;
 }
- 
+.disease-details-dashboard{
+    width: 100%;
+    height: clamp(40vh, auto, 70vh);
+    background-color:#1f1f1f;
+    display: grid;
+    padding: 50px;
+    box-sizing: border-box;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    overflow-y: scroll;
+    font-size: 20px;
+    margin: 10px;
+}
+.town-disease-risk-entry{
+    width: clamp(10vw, 20vw, 30vw);
+    height: auto;
+    min-height: 35vh;
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    flex-direction: column;
+    background-color: #1c1c1c;
+}
+.disease-details{
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+.pollutant-cont-entry{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.pollutant-cont-entry h5{
+    font-size: 1.3rem;
+}
+.pollutant-cont-entry p{
+    font-size: 1rem;
+}

@@ -22,7 +22,7 @@ export default function TownOverviewDashboard({town, data, dateData}){
                         valueFormatter: (date) => {
                             const month = date.getMonth();
                             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            return `${monthNames[month]} ${date.getFullYear().toString()}`;
+                            return `${monthNames[month]} ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear().toString()}`;
                         }
                         }
                     ]}

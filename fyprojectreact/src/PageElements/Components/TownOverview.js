@@ -14,9 +14,10 @@ import '../Stylesheets/townoverview.css';
 import Button from "@mui/material/Button";
 import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
-import { LineChart } from '@mui/x-charts';
+import { ChartsText, LineChart } from '@mui/x-charts';
 import { display } from "@mui/system";
 import ProgressBar from "./ProgressBar/ProgressBar";
+import { ChartsReferenceLine } from '@mui/x-charts/ChartsReferenceLine';
 import katex from 'katex';
 import RiskBar from "./DashboardComponents/RiskBar";
 
@@ -397,35 +398,46 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                             <h2>How relative risks are calculated.</h2>
                             <p>The above estimations of relative risk increase are calculated using WHO Thresholds as our baseline concentration. Therefore, these relative risks are made relative to the 
                                 WHO Guidelines of each pollutant threshold, using known Relative Risks provided by the WHO Hrapie-2 Study.
+                                <br></br>
+                                <br></br>
+                                Note: If the annual reading does not exceed the guideline, there will be no relative increase in risk.
                             </p>
 
                             <table className={"guideline-table"}>
-                                <tr>
-                                    <th>Pollutant</th>
-                                    <th>WHO Guideline. 2022</th>
-
-                                    <th>{args.townName} Reading</th>
-                                </tr>
-                                <tr>
-                                    <td>PM 2.5</td>
-                                    <td>{WHOThresholds["PM25"]}µg/m³</td>
-                                    <td>{polAverages["PM25"]}µg/m³</td>
-                                </tr>
-                                <tr>
-                                    <td>PM 10</td>
-                                    <td>{WHOThresholds["PM10"]}µg/m³</td>
-                                    <td>{polAverages["PM10"]}µg/m³</td>
-                                </tr>
+                                <thead>
                                     <tr>
-                                    <td>O3</td>
-                                    <td>{WHOThresholds["O3"]}µg/m³</td>
-                                    <td>{polAverages["O3"]}µg/m³</td>
-                                </tr>
-                                <tr>
-                                    <td>NO2</td>
-                                    <td>{WHOThresholds["NO2"]}µg/m³</td>
-                                    <td>{polAverages["NO2"]}µg/m³</td>
-                                </tr>
+                                        <th>Pollutant</th>
+                                        <th>WHO Guideline. 2022</th>
+                                        <th>{args.townName} Reading</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>PM 2.5</td>
+                                        <td>{WHOThresholds["PM25"]}µg/m³</td>
+                                        <td>{polAverages["PM25"]}µg/m³</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PM 10</td>
+                                        <td>{WHOThresholds["PM10"]}µg/m³</td>
+                                        <td>{polAverages["PM10"]}µg/m³</td>
+                                    </tr>
+                                        <tr>
+                                        <td>O3</td>
+                                        <td>{WHOThresholds["O3"]}µg/m³</td>
+                                        <td>{polAverages["O3"]}µg/m³</td>
+                                    </tr>
+                                    <tr>
+                                        <td>NO2</td>
+                                        <td>{WHOThresholds["NO2"]}µg/m³</td>
+                                        <td>{polAverages["NO2"]}µg/m³</td>
+                                    </tr>
+                                    <tr>
+                                        <td>SO2</td>
+                                        <td>{WHOThresholds["SO2"]}µg/m³</td>
+                                        <td>{polAverages["SO2"]}µg/m³</td>
+                                    </tr>
+                                </tbody>
                             </table>
 
                             <p>The following table contains all the Relative Risks provided by the HRAPIE-2 study.</p>
@@ -518,12 +530,13 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                         zoom: true,
                         name: "Day",
                         valueFormatter: (date) => {
-                            const month = date.getMonth();
-                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            return `${monthNames[month]} \n ${date.getFullYear().toString()}`;
+                            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+                            return `${monthNames[date.getMonth()]} ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+
                         }
                         }
                     ]}
+                    
                     series={[
                         ...displayData !== null ? displayData.map( d => (
                             d
@@ -538,7 +551,26 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                         '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
                         '.MuiChartsTooltip-paper': { background: '#fff !important' } // tooltip background white
                     }}
-                    />
+                    >
+                    
+
+                    {pollutantFilter.map(pol => {
+                        return ( 
+                        
+                        <ChartsReferenceLine
+                          key={pol}
+                          y={WHOThresholds[pol]}        
+                          label={`WHO Yearly (${WHOThresholds[pol]})`}
+                          labelAlign="end"
+                          labelStyle={{fill: "white", fontSize: 12, fontWeight: 'bold'}}
+                         lineStyle={{ stroke: pollutantColors[pol], strokeWidth: 2, strokeDasharray: '5 5' }} // optional dashed style
+                        />
+                        
+                        )
+                    })}
+                    
+ 
+                    </LineChart>
                 </Box>
 
                 <div className={'year-range-filter'}>

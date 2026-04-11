@@ -24,7 +24,7 @@ export default function TownPollutantBoard(towns) {
 
     const [diseaseData, setDiseaseData] = useState(null);
     const formatRisk = (input) => {
-       return <h4>{input > 1 ? `+${((input - 1) * 10).toFixed(2)}% ` : "N/A" }</h4>
+       return <h4> {input > 1 ? <span style={{color: 'red'}}>{`+${((input - 1) * 10).toFixed(2)}% `} </span> : <span style={{color: 'green'}}>No Increase</span>}</h4>
     }
 
     const computeData = async () => {
@@ -107,8 +107,9 @@ export default function TownPollutantBoard(towns) {
         <div className={"town-pollutant-board"}>
             <h2>Average Annual Concentration Of {pollutant}</h2>
             <hr></hr>
-
+        
             <div className={"town-pollutant-entries-container"}>
+
                 <div className={"town-pollutant-entries-section"}>
                     <div className={"board-pollutant-filter"}>
                         <button className={"pollutant-filter-button"} onClick={() => setPollutant("SO2")}>SO2</button>
@@ -120,11 +121,11 @@ export default function TownPollutantBoard(towns) {
                     <div className={"town-pollutant-entries"}>
                             
                             {townReadings ? townReadings.map((townEntry) => {
-                                        return(
-                                            <div className={"town-pollutant-entry"}>
-                                                <h3>{townEntry.town} | {computeAdverseLevel(pollutant, townEntry.avg)}</h3>
-                                                <p>{townEntry.avg} µg/m³</p>
-                                            </div>
+                                return(
+                                    <div className={"town-pollutant-entry"}>
+                                        <h3>{townEntry.town} | {computeAdverseLevel(pollutant, townEntry.avg)}</h3>
+                                        <p>{townEntry.avg} µg/m³</p>
+                                    </div>
                             )
                         }) : <p>Loading...</p>}
                     </div>
@@ -164,7 +165,7 @@ export default function TownPollutantBoard(towns) {
 
         </div>
         <div className={"town-pollutant-statistics"}>
-            <h2>Analysis</h2>
+            <h2>Analysis for {pollutant}</h2>
             <hr></hr>
 
             <div className={"eda-data-container"}>
@@ -178,14 +179,9 @@ export default function TownPollutantBoard(towns) {
                     <p> {edaData["Average"]} µg/m³</p>
                 </div>
                 <div className={"eda-data-div"}>
-                    <h3>Range:</h3>
-                    <p>µg/m³</p>
-                </div>
-                <div className={"eda-data-div"}>
-                    <h3>Interquartile Range:</h3>
-                    <p> µg/m³</p>
-                    <p style={{fontSize: "1rem"}}>Q1:  µg/m³ </p> 
-                    <p style={{fontSize: "1rem"}}> Q3:  µg/m³</p>
+                    <h3>Range: </h3>
+                    <p>{edaData["range"]} µg/m³</p>
+
                 </div>
                 <div className={"eda-data-div"}>
                     <h3>Most Polluted Town:</h3>
@@ -201,10 +197,10 @@ export default function TownPollutantBoard(towns) {
 
 
 
-            <h2>Mortality Risks for {diseaseNames[disease]}</h2>
+            <h2>{diseaseNames[disease]} Mortality Risks</h2>
             <hr />
-            
-            <div className={"board-pollutant-filter"}>
+            <br></br>
+            <div className={"board-disease-filter"}>
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("RES")}>Respiratory</button>
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("COPD")}>COPD</button>
                 <button className={"pollutant-filter-button"} onClick={() => setDisease("CVD")}>Cardiovascular</button>
@@ -214,33 +210,43 @@ export default function TownPollutantBoard(towns) {
 
             
             
-            <table className={"disease-table-dashboard"}>
+            <table className={"disease-details-dashboard"}>
                  
-                <tr>
-                    <td><b>Town</b></td>
-                    <td><b>PM 2.5</b></td>
-                    <td><b>PM 10</b></td>
-                    <td><b>NO2</b></td>
-                    <td><b>O3</b></td>
-                </tr>
-
                 {diseaseData.map((set) => {
                     return (
-                        <tr>
-                            <td>{set.Town}</td>
-                            <td>{formatRisk(set[disease]["PM25"]) || "N/A"}</td>
-                            <td>{formatRisk(set[disease]["PM10"]) || "N/A"}</td>
-                            <td>{formatRisk(set[disease]["NO2"]) || "N/A"}</td>
-                            <td>{formatRisk(set[disease]["O3"]) || "N/A"}</td>
-                        </tr>
+                        <div className={"town-disease-risk-entry"}>
+                            <h4>{set.Town}</h4>
+                            <hr></hr>
+                            <br></br>
+                            <div className={"disease-details"}>
+                                <div className={"pollutant-cont-entry"}>
+                                    <h5>PM 2.5</h5>
+                                    <p>{formatRisk(set[disease]["PM25"]) || "No Increase"}</p>
+                                </div>
+                                <div className={"pollutant-cont-entry"}>
+                                    <h5>PM 10</h5>
+                                    <p> {formatRisk(set[disease]["PM10"]) || "No Increase"}</p>
+                                </div>
+                                <div className={"pollutant-cont-entry"}>
+                                    <h5>NO2</h5>
+                                    <p>{formatRisk(set[disease]["NO2"]) || "No Increase"}</p>
+                                </div>
+                                <div className={"pollutant-cont-entry"}>
+                                    <h5>O3</h5>
+                                    <p>{formatRisk(set[disease]["O3"]) || "No Increase"}</p>
+                                </div>
+                                <div className={"pollutant-cont-entry"}>
+                                    <h5>SO2</h5>
+                                    <p>{formatRisk(set[disease]["SO2"]) || "No Increase"}</p>
+                                </div>
+                            </div>
+
+                        </div>
                     )
                 })}
 
             </table>
 
-            {/* <div className={"distribution-graph"}>
-
-            </div> */}
                     
         </div>
     </>

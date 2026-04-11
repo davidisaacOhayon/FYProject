@@ -53,18 +53,19 @@ export default function TownClustering({polTown}){
         "Dec": 0 
     });
     }
+
     useEffect(() => {
         resetMonthData(); 
         
         axios.post("/getTownExpPolCluster/", {town: polTown, pollutant: pol})
         .then(res => { 
+            console.log(`cluster data ${JSON.stringify(res.data)}`)
             setData(res.data);
         })
         .catch(err => console.log(err));
 
         axios.get(`/getEDATownPol/?town=${polTown}&pollutant=${pol}`)
         .then(res => {
-            console.log(res.data);
             setEdaData(res.data);
         })
         .catch(err => console.log(err));
@@ -79,7 +80,7 @@ export default function TownClustering({polTown}){
     const renderPage = () => {
         return (
             <>
-
+            <h3>{exp[page]} covers {data[page]["coverage"]}% of 365 days.</h3>
             <Box>
                 <BarChart
                     xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
@@ -99,11 +100,17 @@ export default function TownClustering({polTown}){
                 height={300}
                 series={
                     Object.entries(data).map(([key, value]) => ({
-                    label: exp[key],
-                    data: Object.entries(value.data).map(([x, y]) => ({
-                        x: x,
-                        y: Number(y)
-                    }))
+                        label: exp[key],
+                        data: Object.entries(value.data).map(([x, y]) => ({
+                            x: x,
+                            y: Number(y),
+                            labelX: `${x}`,
+                            labelY: `${y} days of ${exp[key]}`,
+                            valueFormatter: (val) => `${val} days of ${exp[key]}`
+                        
+                        })),
+                        // valueFormatter: (val) => `${val} days of occurance`
+
                     }))
                 }
                 xAxis={[{ scaleType: "band", data : Object.keys(monthData)}]}
@@ -146,10 +153,6 @@ export default function TownClustering({polTown}){
             {data && renderPage() }
             <h2>Details</h2>
             <hr></hr>
-            {[0,1,2].map((page) => { return (
-                <p>{data[page]["min"]} - {data[page]["max"]} µg/m³ Range Coverage: {data[page]["coverage"]} % of 365 days </p> 
-            )
-            })}
 
             {edaData &&
             <div className={"eda-data-container"}>

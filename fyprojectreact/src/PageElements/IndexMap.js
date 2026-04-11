@@ -20,7 +20,7 @@ import { PollutionLevelColorGrade, WHOThresholds, pollutantDBKeyMap } from './Co
 import  Legend  from './Components/Legend.js';
 import PollutionMap from './Components/Layers/PollutionMap.js';
 import AnnualPollutionMap from './Components/Layers/AnnualPollutionMap.js';
-import FiltersInput from './Components/Filters/FilterInput.js';
+import FiltersInputDiseaseRisk from './Components/Filters/FilterInputDiseaseRisk.js';
 
 const OverlayContext = createContext(null);
 
@@ -376,7 +376,7 @@ export default function IndexMap() {
         <h4>Disease Mortality Relative Risks</h4>
         <p>The Following are the relative risks of disease mortality based on each pollutants.</p>
         <p>The relative risks are expressed in the form of X per 10µg/m³</p>
-        <FiltersInput data={relativeRiskData} setData={setRelativeRiskData}/>
+        <FiltersInputDiseaseRisk data={relativeRiskData} setData={setRelativeRiskData}/>
        <span className={'warning-box'}> <p>Note: The relative risks used by default are based on the WHO Hrapie-2 Project. It should be known that the accuracy
           of these relative risks is not guranteed as they are based on studies with different environmental conditions than those in Malta.
           If possible, these RRs should be ammended to be more representative of the Maltese population and atmosphere for best accurate results.

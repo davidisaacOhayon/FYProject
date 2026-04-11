@@ -588,6 +588,8 @@ class APIServer:
 
             std = round(np.std([avg for avg in averages]), 3)
 
+            range = round(max(averages) - min(averages), 3)
+
             # Exceedence rate
             count = 0
             for avg in averages:
@@ -601,7 +603,7 @@ class APIServer:
             best =  min(dataset, key= lambda x : x["avg"])["town"]
              
 
-            return {"Average" : average, "STD" : std, "ex_rate" : ex_rate, "worst": worst, "best" : best}
+            return {"Average" : average, "STD" : std, "ex_rate" : ex_rate, "worst": worst, "best" : best, "range": range}
                 
 
         @self.app.get("/getEDATownPol")

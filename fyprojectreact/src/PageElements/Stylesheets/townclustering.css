@@ -6,6 +6,10 @@
     box-sizing: border-box;
 }
 
+.range-coverage{
+    width: 50%;
+    background-color: rgb(31, 31, 31);
+}
 .eda-data-container{
     padding: 10px;
     width: 70%;
@@ -16,10 +20,10 @@
     gap: 20px;
 }
 .eda-data-div{
-    padding: 20px;
+    padding: 30px;
     width: auto;
     min-width: 30%;
-    height: clamp(20%, 12vh, 11vh);
+    height: clamp(14vh, 12vh, 11vh);
     background-color: rgb(31, 31, 31);
 }
 .eda-data-div h3{

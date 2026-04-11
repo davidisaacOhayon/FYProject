@@ -255,6 +255,9 @@
     height: 20vh;
     margin: 20px;
 }
+.guideline-table tbody{
+    text-align: center;
+}
 .guideline-table thead{
     width: 100%;
 }
