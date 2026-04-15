@@ -200,9 +200,10 @@
 }
 .risk-div{
     display: flex;
-    background-color: rgb(15, 15, 15);
+    /* background-color: rgb(15, 15, 15); */
     height: clamp(50px, 70px, 90px);
     padding: 10px;
+    text-align: center;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -255,7 +256,7 @@
     height: 20vh;
     margin: 20px;
 }
-.guideline-table tbody{
+.guideline-table tbody, td{
     text-align: center;
 }
 .guideline-table thead{

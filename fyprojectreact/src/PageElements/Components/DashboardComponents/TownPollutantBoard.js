@@ -24,7 +24,7 @@ export default function TownPollutantBoard(towns) {
 
     const [diseaseData, setDiseaseData] = useState(null);
     const formatRisk = (input) => {
-       return <h4> {input > 1 ? <span style={{color: 'red'}}>{`+${((input - 1) * 10).toFixed(2)}% `} </span> : <span style={{color: 'green'}}>No Increase</span>}</h4>
+       return <h4> {input > 1 ? <span style={{color: 'red'}}>{`+${((input * 100).toFixed(2) - 100)}% Risk`} </span> : <span style={{color: 'green'}}>No Increase</span>}</h4>
     }
 
     const computeData = async () => {
@@ -76,30 +76,16 @@ export default function TownPollutantBoard(towns) {
 
     const computeStats = async (data) => {
         let averages = data.map((e) => e.avg);
-        console.log(averages);
         
         // Compute Average of averages
         let collectiveAvg = Math.round((averages.reduce( (a,b) => a + b) / averages.length), 2);
 
-        // const getEDA = async () => {
         // why is towns not an array on its own????
         const res = await axios.post('/getEDATownsPol', {"towns" : towns["towns"], "pollutant" : pollutant});
-        console.log(`Received data ${JSON.stringify (res.data)}`)
+ 
         setEdaData(res.data);
-        // }
-
-   
- 
-
-
+         
     }
-
-    
- 
-
- 
-    
-
 
     const renderContents = () => {
     return(
@@ -152,7 +138,7 @@ export default function TownPollutantBoard(towns) {
                         <ChartsReferenceLine
                             x={WHOThresholds[pollutant]} // value where the line hits
                             axis="y"          // because threshold is horizontal
-                            stroke="red"      // line color
+                            stroke="red"     
                             strokeDasharray="4 2"
                             lineStyle={{ stroke: 'red', strokeWidth: 2, strokeDasharray: '5 5' }}  
                         /></BarChart>  </Box>: <p>Loading...</p>
@@ -215,7 +201,7 @@ export default function TownPollutantBoard(towns) {
                 {diseaseData.map((set) => {
                     return (
                         <div className={"town-disease-risk-entry"}>
-                            <h4>{set.Town}</h4>
+                            <h4 style={{fontSize: "2rem"}}>{set.Town}</h4>
                             <hr></hr>
                             <br></br>
                             <div className={"disease-details"}>

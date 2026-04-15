@@ -1,5 +1,3 @@
-
-
 // When a user hovers over a town, we will retrieve the latest pollutant reading
 // to then display it on an overlay box on the town, inplace of the cursor.
 
@@ -95,14 +93,14 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         if( args.townName == null){
             return
         }
-
-
         // Retrieve pollutant info on town
         axios.get(`/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {
             if (res.data) {
             setPollutants(res.data) 
             processPollutantData()
+            }else {
+                return;
             }
         }) 
         .catch(err => console.log(err.res.data))
@@ -113,13 +111,15 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         if( args.townName == null){
             return
         }
-
         // Retrieve pollutant info on town
         axios.get(`/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {
-            if (res.data) {
-            setPollutants(res.data) 
-            processPollutantData()
+            if (res.data.length !== 0) {
+                setPollutants(res.data) 
+                processPollutantData()
+            } else {
+                setRiskData(null);
+                return;
             }
         }) 
         .catch(err => console.log(err.res.data))
@@ -127,8 +127,10 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         // Retrieve risks calculated by pollutant readings
         axios.post(`/getDiseaseRisks/`, {"town": args.townName, "risks": riskRatios})
         .then(res => {
-            if (res.data) {
+            if (res.data.length !== 0) {
                 setRiskData(res.data);
+            } else {
+                setRiskData(null);
             }
             
         })
@@ -138,8 +140,10 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         axios.get(`/getPollutantAvgsTown?town=${args.townName}`)
         .then(
             res => {
-                if(res.data) {
+                if(res.data.length !== 0) {
                     setPolAverages(res.data);
+                } else {
+                    setRiskData(null);
                 }
                 
             }
@@ -293,12 +297,12 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
 
 
     const formatRisk = (input) => {
-       return <h4>{input > 1 ? `+${((input - 1) * 10).toFixed(2)}% ` : "N/A" }</h4>
+       return <h4>{input > 1 ? `+ ${(input * 100).toFixed(2) - 100}% ` : "N/A" }</h4>
     }
         
     const diseaseOverview = () => {
 
-        if (!riskData) {
+        if (riskData == null) {
             return (<>
                 <h1>
                     No Data Available for analysis.
@@ -325,18 +329,19 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                         <div className={"disease-overview-box"}>
                             <h3>Respiratory Disease Mortality</h3>
                             <img className={"disease-logo"} src={RES}></img>
+
                             <div className={"disease-overview-value"}>{
                                 Object.keys(riskData["RES"]).map(pol => {
                                     return <div key={pol}>
                                         {computeRelativeRisk(pol, "RES")}
                                         </div>
                                 })
-                                
                             }</div>
                         </div>
                         <div className={"disease-overview-box"}>
                             <h3>Cardiovascular Disease Mortality</h3>
                             <img className={"disease-logo"} src={CVD}></img>
+               
                             <div className={"disease-overview-value"}>{
                                     Object.keys(riskData["CVD"]).map(pol => {
                                         return <div key={pol}>
@@ -414,28 +419,28 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                                 <tbody>
                                     <tr>
                                         <td>PM 2.5</td>
-                                        <td>{WHOThresholds["PM25"]}µg/m³</td>
-                                        <td>{polAverages["PM25"]}µg/m³</td>
+                                        <td>{WHOThresholds["PM25"]} µg/m³</td>
+                                        <td>{polAverages["PM25"]} µg/m³</td>
                                     </tr>
                                     <tr>
                                         <td>PM 10</td>
-                                        <td>{WHOThresholds["PM10"]}µg/m³</td>
-                                        <td>{polAverages["PM10"]}µg/m³</td>
+                                        <td>{WHOThresholds["PM10"]} µg/m³</td>
+                                        <td>{polAverages["PM10"]} µg/m³</td>
                                     </tr>
                                         <tr>
                                         <td>O3</td>
-                                        <td>{WHOThresholds["O3"]}µg/m³</td>
-                                        <td>{polAverages["O3"]}µg/m³</td>
+                                        <td>{WHOThresholds["O3"]} µg/m³</td>
+                                        <td>{polAverages["O3"]} µg/m³</td>
                                     </tr>
                                     <tr>
                                         <td>NO2</td>
-                                        <td>{WHOThresholds["NO2"]}µg/m³</td>
-                                        <td>{polAverages["NO2"]}µg/m³</td>
+                                        <td>{WHOThresholds["NO2"]} µg/m³</td>
+                                        <td>{polAverages["NO2"]} µg/m³</td>
                                     </tr>
                                     <tr>
                                         <td>SO2</td>
-                                        <td>{WHOThresholds["SO2"]}µg/m³</td>
-                                        <td>{polAverages["SO2"]}µg/m³</td>
+                                        <td>{WHOThresholds["SO2"]} µg/m³</td>
+                                        <td>{polAverages["SO2"]} µg/m³</td>
                                     </tr>
                                 </tbody>
                             </table>

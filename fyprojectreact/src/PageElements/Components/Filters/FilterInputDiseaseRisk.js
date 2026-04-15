@@ -1,6 +1,6 @@
 import React from 'react';
 import '../../Stylesheets/filters.css';
-import { polAcronymNameMap } from '../Backend/PollutionInfo';
+import { polAcronymNameMap, diseaseNames} from '../Backend/PollutionInfo';
 
 export default function FiltersInputDiseaseRisk({ data, setData }) {
 
@@ -37,7 +37,7 @@ export default function FiltersInputDiseaseRisk({ data, setData }) {
             return (
 
             <tr key={disease}>
-            <td>{disease}</td>
+            <td>{diseaseNames[disease]}</td>
             {allPollutants.map(pollutant => (
                 <td key={pollutant}>
                     <input

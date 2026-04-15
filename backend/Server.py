@@ -28,7 +28,6 @@ from stations import stationsTownMap, townsCoordinates
 class Pollutants(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     town: str | None = None
-    no_ugm3: float | None = None
     no2_ugm3: float | None = None
     so_ugm3: float | None = None
     o_ugm3: float | None = None
@@ -82,41 +81,9 @@ class APIServer:
                 "NO2" : "no2_ugm3",
                 "PM10" : "pm10_ugm3",
                 "PM25" : "pm25_ugm3",
-                "NO": "no_ugm3",
                 "O3" : "o_ugm3"
             }
  
-        self.COPD_RR = {
-            "PM25" : 1.14,
-            "PM10" : 1.22,
-            "NO2" : 1.04
-        }
- 
-        self.LUNGC_RR = {
-            "PM25" : 1.09,
-            "PM10" : 1.10,
-            "NO2" : 1.07
-        }
- 
-        self.IHD_RR = {
-            "PM25" : 1.14,
-            "PM10" : 1.06,
-            "NO2" : 1.05
-        }
-
-        self.CVD_RR = {
-            "PM25" : 1.13,
-            "PM10" : 1.08,
-            "NO2" : 1.05,
-        }
-
-        self.RES_RR = {
-            "PM25" : 1.14,
-            "PM10" : 1.12,
-            "NO2" : 1.05,
-            "O3": 1.05 
-        }
-            
         self.WHOThresholds = {
             "SO2" : 40,
             "NO2" : 40,
@@ -125,8 +92,6 @@ class APIServer:
             "CO2" : 4,
             "O3": 60
         }
-
-
 
         # Ensure that the database URL is correctly set.
         self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
@@ -236,6 +201,7 @@ class APIServer:
         for col in df.columns:
             if col != 'Date' and col != 'DatePM':
                 df[col] = pd.to_numeric(df[col], errors='coerce')
+
         # Fill NaN values in numeric columns with 0
         num_cols = df.select_dtypes(include="number").columns
     
@@ -243,11 +209,12 @@ class APIServer:
 
         # we will have to copy over
         # The daily aggregates of the PM readings.
+        # Since ERA provided them to us in monthly aggregates.
 
         pm_df = df[['DatePM', 'PM2.5 (µg/m3)', 'PM10 (µg/m3)']].copy()
 
-        # Group by 'Date' and calculate mean for numeric columns for each day   
-        df = df.groupby("Date", as_index=False).mean(numeric_only=True) 
+        # Group by 'Date' and calculate mean for numeric columns for each day (This assumes the datasets are provided in hourly aggregates)  
+        df = df.groupby("Date", as_index=False).mean(numeric_only=True).round(2)
  
         return df, pm_df
    
@@ -287,7 +254,7 @@ class APIServer:
 
     def populate_db(self):
         '''Will iterate through each file found within the defined file path,
-           can handle csv / xlsx files.'''
+           can handle xlsx files.'''
     
         files = os.listdir(self.dirPath)
 
@@ -312,34 +279,104 @@ class APIServer:
         print(f"Dataset lengths for each station: {lengths}")
         return min(lengths)
     
+    def __populate_station_readings(self, path, stations):
+        '''Processes the dataset readings to populate the DB with the station readings directly. No Interpolation
+           Multiple datasets from multiple years can be extracted but make sure no collisions occur.
+        '''
+        with Session(self.engine) as session:
+
+            # Keep track of usable dataset length (typically 365)
+            lim = self.__getUsableDatasetLength(path)
+
+            for station in stations:
+
+                logger.debug(f"Processing station {station}, skipping interpolation")
+
+                # Read Data set
+                df = pd.read_excel(path, sheet_name=station, na_values=['na'])
+
+                # Clean data frame by handling NAN values, converting data types and grouping by date
+                # Contains main dataframe for NO2, SO2, O3 and a separate dataframe for PM10 and PM2.5
+                df, pm_df = self.__cleanDataFrame(df)
+
+                # For each day
+                for row in range(0, lim):
+                    townData = {}
+
+                    townData['town'] = station
+
+                    # Get date for current row
+                    townData['Date'] = df.iloc[row]['Date']
+
+                    print(df.columns)
+
+                    # Simply access pollutant rows from dataset
+                    townData["NO2 (µg/m3)"] = df.iloc[row]['NO2 (µg/m3)']
+                    townData["SO2 (µg/m3)"] = df.iloc[row]['SO2 (µg/m3)']
+                    townData["O3 (µg/m3)"] = df.iloc[row]['O3 (µg/m3)']
+                    townData["PM10 (µg/m3)"] = pm_df.loc[pm_df['DatePM'] == townData['Date']]['PM10 (µg/m3)'].iloc[0]
+                    townData["PM2.5 (µg/m3)"] = pm_df.loc[pm_df['DatePM'] == townData['Date']]['PM2.5 (µg/m3)'].iloc[0]
+
+               
+                    object = Pollutants(
+                        no2_ugm3=townData["NO2 (µg/m3)"],
+                        so_ugm3=townData["SO2 (µg/m3)"],
+                        o_ugm3=townData["O3 (µg/m3)"],
+                        pm10_ugm3 = townData['PM10 (µg/m3)'] if 'PM10 (µg/m3)' in townData else 0,
+                        pm25_ugm3=townData["PM2.5 (µg/m3)"],
+                        town=townData['town'],
+                        day=townData['Date']
+                    )
+                    session.add(object)
+                    
+                
+                session.commit()
+
     def __handleXLSXFile(self, path):   
         with Session(self.engine) as session:
             mainData = {}
-            towns = townsCoordinates.keys()
-            print(f"Towns to process: {len(towns)}")
-            count = 0
 
+            towns = townsCoordinates.keys()
+
+            # Keep track of stations (sheets)
+            stations = pd.ExcelFile(path).sheet_names
+
+            # Populate Station readings into DB
+            self.__populate_station_readings(path, stations)
+            
+            # Keep track of usable dataset length (typically 365)
+            lim = self.__getUsableDatasetLength(path)
+
+
+            print(f"Towns to process: {len(towns)}")
+            pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)', 'PM10 (µg/m3)', 'PM2.5 (µg/m3)']
             timeNow = time.time()
+
+
             # Go through each town
             for town in towns:
-                print("count:", count)
-                count += 1
-                data = []
-                lim = self.__getUsableDatasetLength(path)
-                print(f"Usable dataset length: {lim}")
+                
+                # Skip Stations
+                if town in stations:
+                    continue
 
-                # Iterate through each data row for the town
+                data = []
+
+                print(f"Usable dataset length: {lim}")
+             
+                print(f"Handling pollution for {town} \n\n")
+                # Iterate through each data row for the town and interpolate pollutant readings
                 for row in range(0, lim):
                     townData = {}
                     townData['town'] = town
                     townLat, townLon = townsCoordinates[town]
-                    pollutants = ['NO2 (µg/m3)', 'SO2 (µg/m3)', 'O3 (µg/m3)', 'PM10 (µg/m3)', 'PM2.5 (µg/m3)']
+                    
                     # go through each pollutant
                     for p in pollutants:
                         inverseDistance = 0
                         # Keep track of pollutant sum
                         pollutantSum = 0
-                        print(f"Processing pollutant {p} ---------------------------------------------------------------")
+                        print(f"Processing pollutant {p} for town {town} ---------------------------------------------------------------")
 
                         # Go through each station available
                         for station in self.stations:
@@ -359,14 +396,18 @@ class APIServer:
                             # Calculated distance from station to current town
                             distance = round(self.__calculate_town_distance(townLat, townLon, stationLat, stationLon), 2)
                             
+                            print(f"DISTANCE BETWEEN {town} AND {station} is {distance}")
                             # Check if we are accessing PM10 PM25
                             if (p == "PM10 (µg/m3)" or p == "PM2.5 (µg/m3)"):
                                 # Access PM10 and PM2.5 rows of the current station and date
                                 pollutantSum += pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0] / distance
+
+                                print(f"Summing THIS THINGY by { pm_df.loc[pm_df['DatePM'] == townData['Date']][p].iloc[0]} and {distance}")
                                 # Average the PM Values
                                 inverseDistance += 1 / distance
-              
 
+                                print(f"CURRENT PM2.5/PM10 SUM : {pollutantSum} with DISTANCE {inverseDistance}")
+                                continue
                             else:
                                 # Average the concentration values from each station for the current pollutant
                                 try:
@@ -375,7 +416,7 @@ class APIServer:
                                     inverseDistance += 1 / distance
                                 except Exception as e:
                                     print(f"Error accessing row {row} for station {station}, pollutant {p}: {e}")
-
+                        print(f"PRODUCT OF THE CURRENT POLLUTANT WE ARE PRODUCING GRANTS US A SUM {pollutantSum} AND {inverseDistance} RESULTING IN {math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0} ")
                         townData[p] = math.floor(( pollutantSum / inverseDistance ) * 100) / 100 if inverseDistance != 0 else 0
 
 
@@ -385,7 +426,6 @@ class APIServer:
                     object = Pollutants(
                         town = townData['town'],
                         no2_ugm3 = townData['NO2 (µg/m3)'],
-                        no_ugm3= 0,
                         so_ugm3 = townData['SO2 (µg/m3)'],
                         o_ugm3 = townData['O3 (µg/m3)'],
                         pm10_ugm3 = townData['PM10 (µg/m3)'] if 'PM10 (µg/m3)' in townData else 0,
@@ -393,15 +433,21 @@ class APIServer:
                         day = townData['Date']
                     )
                     session.add(object)
+                    print(f"Finished processing row for town {town} and {townData['Date']}")
+                    session.commit()
+
                 print(f"Finished processing town: {town}")
                 session.commit()
+                
+
+                
 
             timefinish = time.time()
             print(f"Time taken to process dataset: {timefinish - timeNow}")
 
 
 
-                # mainData[town] = data
+            # mainData[town] = data
 
     def get_session(self):
         '''Individualizes each DB request within a session to prevent conflicts.'''
@@ -416,7 +462,6 @@ class APIServer:
             \n */getTownExpPolCluster/* - Clusters records of a town's annual pollutant reading
         '''
 
-
         @self.app.post("/getPolDistribution")
         def get_pol_distribution(pollutants : list[str]):
             # Get Mean
@@ -424,8 +469,6 @@ class APIServer:
 
             # Get Optimal Decimal points for scaling
             c = math.floor(mean * 100) / 100
-
-
 
         @self.app.post("/getDiseaseRisksTowns")
         def get_disease_risks_towns(payload: DiseaseRiskTownsPayload, session: Session = Depends(self.get_session)):
@@ -459,10 +502,9 @@ class APIServer:
                     "PM25" : entry["PM25"],
                     "O3" : entry["O3"]
                 }
-                # Calculate Disease Risks
 
-            
-            
+                # Calculate Disease Risks
+                
                 logger.debug(f"Beginning computation for {entry.town}")
                 body = {
                         "Town" : entry.town,    
@@ -508,11 +550,9 @@ class APIServer:
 
             return response
 
-
         @self.app.post("/getDiseaseRisks")
         def get_disease_risks(payload: DiseaseRiskPayload, session: Session = Depends(self.get_session)):
             ''' Will Retrieve the towns Relative Risk based on NO2, PM2.5 & PM10 readings.'''
-
 
             town = payload.town
             risks = payload.risks
@@ -544,17 +584,16 @@ class APIServer:
                 tempRisks = {"SO2" : 0, "NO2" : 0, "PM10" : 0, "PM25" : 0, "O3" : 0}
                 for pol in ["SO2", "NO2", "PM10", "PM25", "O3"]:
                     
-                    # logger.debug(f"Processing disease: {key} for pollutant {pol}")
+                    logger.debug(f"Processing disease: {key} for pollutant {pol}")
                     result = self.__compute_risk(risks[key][pol], self.WHOThresholds[pol], map[pol])
                     tempRisks[pol] = result
-                    # logger.debug(f"Computed risk for disease {key} and pollutant {pol}: {result}")
+                    logger.debug(f"Computed risk for disease {key} and pollutant {pol}: {result}")
                 
-                # logger.debug(f"Computed risks for disease {key}: {tempRisks}")
+                logger.debug(f"Computed risks for disease {key}: {tempRisks}")
                 contents[key] = tempRisks
 
-            # logger.debug(f"Computed disease risks: {contents}")
+            logger.debug(f"Computed disease risks: {contents}")
             return contents
-
 
         @self.app.get("/getTownsReadingsOnDate")
         def get_town_readings_date(date: date, session: Session = Depends(self.get_session)):
@@ -562,7 +601,6 @@ class APIServer:
             query = select(Pollutants).where(Pollutants.day == date)
             return session.exec(query).all()
         
-
         @self.app.post("/getEDATownsPol")
         def get_eda_towns(payload: TownsPollutantPayload, session: Session = Depends(self.get_session)):
             '''Returns data processed for EDA of selected towns'''
@@ -605,7 +643,6 @@ class APIServer:
 
             return {"Average" : average, "STD" : std, "ex_rate" : ex_rate, "worst": worst, "best" : best, "range": range}
                 
-
         @self.app.get("/getEDATownPol")
         def get_eda_town_pol(town: str, pollutant: str, session: Session = Depends(self.get_session)):
             '''Returns all records of a town's pollutant readings for EDA purposes.'''
@@ -657,7 +694,6 @@ class APIServer:
             
             return {"Q1": q1, "Q3": q3, "IQR" : iqr, "Mean": mean, "STD_Dev": std_dev, "Min": min, "Max": max}
         
-
         @self.app.get("/getTownExpPolClusters")
         def cluster_towns(pollutant: str, session: Session = Depends(self.get_session)):
             '''Clusters all towns by their yearly pollutant readings and return all cluster counts of all exposure levels.'''
@@ -688,7 +724,6 @@ class APIServer:
                 payload.append(cluster)
 
             return payload
-
 
         @self.app.post("/getTownExpPolCluster/")
         def cluster_town(load: TownPollutantPayload, session: Session = Depends(self.get_session)):
@@ -726,7 +761,6 @@ class APIServer:
                 return {"error": "Not found"}
             return row
 
-
         @self.app.get("/getPollutantVolTown/")
         def get_pollutants_by_town(
             town: str,
@@ -745,7 +779,6 @@ class APIServer:
             return session.exec(query.order_by(Pollutants.day)).all()
 
         @self.app.post("/getPollutantVolTowns/")
-    
         def get_pollutants_by_towns(
             payload: TownsPayload,
             start_date: date | None = None,
@@ -769,7 +802,6 @@ class APIServer:
 
             return response
         
-
         @self.app.post("/getPollutantAvgTowns/")
         def get_pollutant_avg_towns(
             payload: TownsPollutantPayload,

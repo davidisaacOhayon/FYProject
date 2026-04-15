@@ -110,8 +110,6 @@ export default function IndexMap() {
     pitch: 0,
   };
 
-
-
   //////// LOGIC FUNCTIONS
   
   // HOVERED TOWN USE EFFECT HANDLER
@@ -215,7 +213,6 @@ export default function IndexMap() {
 
   }, [clickEventFilter, clickEventOverlay])
 
- 
 
   ///////// LAYER VARIABLES 
 
@@ -297,7 +294,8 @@ export default function IndexMap() {
   let PollutionLevelLayer = useMemo(() => new PolygonLayer({  
     id: "PolygonLevelLayer",
     data: townLayerData !== null ? townLayerData : null ,
-    getPolygon : d => {console.log(d); return d.geometry[0][0]},
+    getPolygon : d => {console.log(d); 
+      if (d.geometry == null) { return [] } else { return d.geometry[0][0]}},
     getLineColor:[255, 255, 255],
     getFillColor: d => PollutionLevelColorGrade(d.pol, WHOThresholds[Object.keys(pollutants).find(key => pollutants[key].flag == true)]),
     getLineWidth: 10,
@@ -317,16 +315,14 @@ export default function IndexMap() {
 
   },[hoveredTown])
 
+  // Create Polygon Levels for Pollution level grading
   let layers = useMemo(() => {
-
 
     let baseLayers = [];
 
     if (TownsLayer){
       baseLayers.push(TownsLayer);
     }
-
-
 
     if (townLayerToggled){
 
@@ -353,7 +349,6 @@ export default function IndexMap() {
     <>
       <h2>Pollution Level Grading</h2>
       <hr></hr>
-    
       <FilterSelection data={pollutants} setData={setPollutants} />
       <div className={"filters-options-main"}>
         <h3>Date Selection:</h3>
@@ -371,7 +366,7 @@ export default function IndexMap() {
    const renderSettingsFilter = () => {
     return (
       <>
-        <h2>Settings</h2>
+        <h2>Disease Settings</h2>
         <hr></hr>
         <h4>Disease Mortality Relative Risks</h4>
         <p>The Following are the relative risks of disease mortality based on each pollutants.</p>
@@ -393,7 +388,7 @@ export default function IndexMap() {
         <div className="map-controls">
           <h2 className="filter-title">Controls</h2>
           <button onClick={() => setFilter('pollutantFilter')} className={selectedFilter == 'pollutantFilter' ? "map-control-btn active" : "map-control-btn"}>Pollutants</button>
-          <button onClick={() => setFilter('relativeRiskFilter')} className={selectedFilter == 'relativeRiskFilter' ? "map-control-btn active" : "map-control-btn"}>Settings</button>
+          <button onClick={() => setFilter('relativeRiskFilter')} className={selectedFilter == 'relativeRiskFilter' ? "map-control-btn active" : "map-control-btn"}>Disease Settings</button>
           <button className="map-control-btn" onClick={ () => setDashboardActive(!dashboardActive)}>Dashboard</button>
         </div>
         <div ref={filterBox} className={selectedFilter ? "filters-content active" : "filters-content"}>
