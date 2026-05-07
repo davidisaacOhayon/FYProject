@@ -284,7 +284,7 @@ class APIServer:
            Multiple datasets from multiple years can be extracted but make sure no collisions occur.
         '''
         with Session(self.engine) as session:
-
+            logger.debug("Populating The Database bro")
             # Keep track of usable dataset length (typically 365)
             lim = self.__getUsableDatasetLength(path)
 
@@ -342,7 +342,7 @@ class APIServer:
             stations = pd.ExcelFile(path).sheet_names
 
             # Populate Station readings into DB
-            self.__populate_station_readings(path, stations)
+            # self.__populate_station_readings(path, stations)
             
             # Keep track of usable dataset length (typically 365)
             lim = self.__getUsableDatasetLength(path)
@@ -388,8 +388,7 @@ class APIServer:
 
                             # Get date for current row
                             townData['Date'] = df.iloc[row]['Date']
-
-
+                            
                             # Get station coordinates
                             stationLat, stationLon = stationsTownMap[station]['coordinates']
 
@@ -504,7 +503,7 @@ class APIServer:
                 }
 
                 # Calculate Disease Risks
-                
+
                 logger.debug(f"Beginning computation for {entry.town}")
                 body = {
                         "Town" : entry.town,    
@@ -850,13 +849,13 @@ class APIServer:
  
             result = session.exec(query).first()
 
-            
+            logger.debug(f"Retrieved {result}")
             return {
-                "NO2" : round(result.no2, 2),
-                "PM10" : round(result.pm10, 2),
-                "PM25" : round(result.pm25, 2),
-                "O3" : round(result.o3, 2),
-                "SO2" : round(result.so2, 2)
+                "NO2" : round(result._mapping.get("no2", 0), 2),
+                "PM10" : round(result._mapping.get("pm10", 0), 2),
+                "PM25" : round(result._mapping.get("pm25", 0), 2),
+                "O3" : round(result._mapping.get("o3", 0), 2),
+                "SO2" : round(result._mapping.get("so2", 0), 2)
             }
 
         @self.app.get("/getPollutantVol/")
@@ -880,9 +879,10 @@ class APIServer:
             query = select(Pollutants.town).distinct()
             return session.exec(query).all()
 
-      
-
+    
 # ================= RUN =================
+
+
 
 server = APIServer(dbprocessor=False)
 app = server.app

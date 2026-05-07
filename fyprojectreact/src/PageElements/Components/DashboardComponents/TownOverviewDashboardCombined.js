@@ -4,7 +4,7 @@ import { LineChart } from '@mui/x-charts';
 import { ChartsReferenceLine } from '@mui/x-charts/ChartsReferenceLine';
 import {useEffect, useState, useMemo} from 'react';
 import { WHOThresholds } from '../Backend/PollutionInfo';
-export default function TownOverviewDashboardCombined({data, YearlyData, pollutant}){
+export default function TownOverviewDashboardCombined({data, YearlyData, pollutant, limit}){
 
 
     
@@ -27,6 +27,11 @@ export default function TownOverviewDashboardCombined({data, YearlyData, polluta
         } else {
             let tempData = []
             Object.entries(data).map(([town, tData]) => {
+                if(tData["DisplayData"] == null || tData["DisplayData"].length === 0){
+                    return;
+                }
+                const displayData = tData["DisplayData"][0];
+                console.log(`Display data ${displayData}`);
                 const polData = tData["DisplayData"][0]["data"];
                 tempData.push({"label": `${town} - ${pollutant}`, "data": polData, "color": randomColor()})
             })
@@ -65,7 +70,6 @@ export default function TownOverviewDashboardCombined({data, YearlyData, polluta
     const renderGraph = () => {
         return (
             <div className={"towns-graph-overview"}>
-
             <hr/>
             <Box >
                 <LineChart
@@ -99,8 +103,8 @@ export default function TownOverviewDashboardCombined({data, YearlyData, polluta
                     }}
                     >
                     <ChartsReferenceLine
-                        x={0} // value where the line hits
-                        axis="y"          // because threshold is horizontal
+                        x="x" // value where the line hits
+                        axis={limit}         // because threshold is horizontal
                         stroke="red"      // line color
                         strokeDasharray="4 2"
                         lineStyle={{ stroke: 'red', strokeWidth: 2, strokeDasharray: '5 5' }}  

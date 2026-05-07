@@ -4,6 +4,9 @@ import { polAcronymNameMap, diseaseNames} from '../Backend/PollutionInfo';
 
 export default function FiltersInputDiseaseRisk({ data, setData }) {
 
+
+
+ 
   const changeData = (value, disease, pollutant) => {
     setData(prev => {
       const newData = { ...prev };

@@ -5,9 +5,6 @@ import { LineChart } from '@mui/x-charts';
 
 export default function TownOverviewChart({yData, xData}){
 
-
-    
-
     return (
 
     <Box>
@@ -17,6 +14,7 @@ export default function TownOverviewChart({yData, xData}){
         series={xData !== null ? xData: []}
         height={300}
         sx={{
+            
             '.MuiChartsAxis-line': { stroke: '#fff' },       // axis lines white
             '.MuiChartsAxis-tick': { stroke: '#fff' },       // tick marks white
             '.MuiChartsAxis-tickLabel': { fill: '#fff' },    // tick text white

@@ -36,7 +36,12 @@ export default function TownOverviewDashboard({town, data, dateData}){
                         '.MuiChartsAxis-tickLabel': { fill: '#fff !important' },    // tick text white
                         '.MuiChartsLegend-root': { color: '#fff !important' },      // legend white
                         '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
-                        '.MuiChartsTooltip-paper': { background: '#fff !important' } // tooltip background white
+                        '.MuiChartsTooltip-paper': { background: '#fff !important' }, // tooltip background white
+                        '& text': {
+                            fill: 'white',
+                            fontWeight: '900',
+                            fontSize: '25px'
+                        }
                     }}
                     />
                 </Box>

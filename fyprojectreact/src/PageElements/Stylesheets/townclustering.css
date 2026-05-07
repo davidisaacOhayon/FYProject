@@ -2,22 +2,22 @@
 .pollution-cluster-div{
     width: 100%;
     height: auto;
+    min-height: clamp(200vh, 200vh, 210vh);
     padding: 20px;
     box-sizing: border-box;
 }
-
 .range-coverage{
     width: 50%;
     background-color: rgb(31, 31, 31);
 }
 .eda-data-container{
     padding: 10px;
-    width: 70%;
+    width: 100%;
     height: auto;
-    min-height: 35vh;
+    min-height: 55vh;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+    gap: 10px;
 }
 .eda-data-div{
     padding: 30px;

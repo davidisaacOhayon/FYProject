@@ -131,12 +131,10 @@ export default function IndexMap() {
 
     let data; 
 
-
     // "Annual Pollution per Town" Check
     if(selectedPol && polAnnum){
        const fetchData = async () => {
         data = await AnnualPollutionMap(selectedPol);
-        console.log(`Annual data retrieved${data}`)
         setLayerData(data);
        }
 
@@ -159,7 +157,6 @@ export default function IndexMap() {
      
     }
   }, [pollutants, mainDate, polAnnum])
-
 
   //////// EVENT LISTENERS 
  
@@ -212,7 +209,6 @@ export default function IndexMap() {
     }
 
   }, [clickEventFilter, clickEventOverlay])
-
 
   ///////// LAYER VARIABLES 
 
@@ -294,7 +290,7 @@ export default function IndexMap() {
   let PollutionLevelLayer = useMemo(() => new PolygonLayer({  
     id: "PolygonLevelLayer",
     data: townLayerData !== null ? townLayerData : null ,
-    getPolygon : d => {console.log(d); 
+    getPolygon : d => {
       if (d.geometry == null) { return [] } else { return d.geometry[0][0]}},
     getLineColor:[255, 255, 255],
     getFillColor: d => PollutionLevelColorGrade(d.pol, WHOThresholds[Object.keys(pollutants).find(key => pollutants[key].flag == true)]),
@@ -328,9 +324,6 @@ export default function IndexMap() {
 
       // Retain column layers if they exist
       if (townLayerData && townLayerData.length > 0) {
-        
-        console.log("Town layer Data should not be empty at this point.");
-        console.log(Object.values(townLayerData));
         PollutionLevelLayer = PollutionLevelLayer.clone({
           data: Object.values(townLayerData)
         });
@@ -354,10 +347,10 @@ export default function IndexMap() {
         <h3>Date Selection:</h3>
         <input disabled={polAnnum} type="date" id="date" defaultValue={mainDate} onChange={(e) => {setDate(e.target.value)}}></input>
         <label for={"annum"}> Annual Average:</label>
-        <input type="checkbox" id="annum" name="annum" onChange={(e) => setPolAnnum(e.target.checked)}></input>
+        <input type="checkbox" id="annum" name="annum" checked={polAnnum} onChange={(e) => setPolAnnum(e.target.checked)}></input>
         
         <label for={"pollution"}>Toggle Filter Mapping:</label>
-        <input placeholder={"Pollution Layer"} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
+        <input placeholder={"Pollution Layer"} checked={townLayerToggled} type="checkbox" id="pollution" name="pollution" onChange={() => toggleTownLayer(!townLayerToggled)}/> 
       </div>
     </>
     )

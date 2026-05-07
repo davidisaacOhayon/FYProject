@@ -23,6 +23,8 @@ export default function TownPollutantBoard(towns) {
     const [disease, setDisease] = useState("RES");
 
     const [diseaseData, setDiseaseData] = useState(null);
+
+
     const formatRisk = (input) => {
        return <h4> {input > 1 ? <span style={{color: 'red'}}>{`+${((input * 100).toFixed(2) - 100)}% Risk`} </span> : <span style={{color: 'green'}}>No Increase</span>}</h4>
     }
@@ -40,11 +42,21 @@ export default function TownPollutantBoard(towns) {
         
         let rawData = res.data;
 
-        setTownReadings(rawData);
+        // Check if Data of town is available
 
-        await computeStats(rawData);  
+        if (rawData.length == 0) {
+            return;
+        } else {
 
-        await computeDiseases(towns.towns);
+            setTownReadings(rawData);
+
+            await computeStats(rawData);  
+
+            await computeDiseases(towns.towns);
+
+        }
+
+
     
     
     }
@@ -118,7 +130,7 @@ export default function TownPollutantBoard(towns) {
                 </div>
 
                 <div className={"town-pollutant-bar-graph"}>
-
+                        
                         {townReadings ? 
                         <Box className={"town-pollutant-bar-graph-box"} sx={{ height: '80%', width: '100%' }}>
                         <BarChart
@@ -133,7 +145,8 @@ export default function TownPollutantBoard(towns) {
                             '.MuiChartsAxis-tickLabel': { fill: '#fff !important' },    // tick text white
                             '.MuiChartsLegend-root': { color: '#fff !important' },      // legend white
                             '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
-                            '.MuiChartsTooltip-paper': { background: '#fff !important' } // tooltip background white
+                            '.MuiChartsTooltip-paper': { background: '#fff !important' },
+                            '& text' : {fill : 'white'}// tooltip background white
                         }}>       
                         <ChartsReferenceLine
                             x={WHOThresholds[pollutant]} // value where the line hits

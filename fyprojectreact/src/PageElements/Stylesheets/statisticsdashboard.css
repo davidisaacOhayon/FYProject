@@ -4,6 +4,7 @@
     --varBG: #272727;
 }
 
+
 .statistics-monitor-main{
     top: 3%;
     left: 10%;
@@ -119,7 +120,7 @@
 .town-dashboards-container{
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
     grid-template-rows: repeat(auto-fit, minmax(400px, 1fr));
     gap: clamp(2%, 4%, 5%);
     margin: 20px;

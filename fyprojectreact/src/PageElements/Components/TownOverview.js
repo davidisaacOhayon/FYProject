@@ -97,13 +97,15 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         axios.get(`/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {
             if (res.data) {
-            setPollutants(res.data) 
-            processPollutantData()
+                setPollutants(res.data) 
+                processPollutantData()
             }else {
                 return;
             }
         }) 
-        .catch(err => console.log(err.res.data))
+        .catch(err => {
+            return;
+        })
     }, [])
     
     // Process pollutant data for risk analysis on potential diseases
@@ -114,7 +116,7 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
         // Retrieve pollutant info on town
         axios.get(`/getPollutantVolTown/?town=${args.townName}`)
         .then(res => {
-            if (res.data.length !== 0) {
+            if (res.data.length !== 0 && res != null) {
                 setPollutants(res.data) 
                 processPollutantData()
             } else {
@@ -122,33 +124,38 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                 return;
             }
         }) 
-        .catch(err => console.log(err.res.data))
+        .catch(err => {
+            return;
+        })
 
         // Retrieve risks calculated by pollutant readings
         axios.post(`/getDiseaseRisks/`, {"town": args.townName, "risks": riskRatios})
         .then(res => {
-            if (res.data.length !== 0) {
+            if (res.data.length !== 0 && res != null) {
                 setRiskData(res.data);
             } else {
                 setRiskData(null);
             }
-            
         })
-        .catch(err => console.log(err.res.data))
+        .catch(err => {
+            return;
+        })
+
 
         // Retrieve Pollutant averages
         axios.get(`/getPollutantAvgsTown?town=${args.townName}`)
         .then(
             res => {
-                if(res.data.length !== 0) {
+                if(res.data.length !== 0 && res != null) {
                     setPolAverages(res.data);
                 } else {
                     setRiskData(null);
                 }
-                
             }
         )
-        .catch(err => console.log(err.res.data))
+        .catch(err => {
+            return;
+        })
 
         
         
@@ -304,7 +311,7 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
 
         if (riskData == null) {
             return (<>
-                <h1>
+                <h1 style={{marginTop: "5vh"}}>
                     No Data Available for analysis.
                 </h1>
             </>)
@@ -514,7 +521,7 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
 
         if (!pollutantReadings || !displayData) {
             return (<>
-                <h1>
+                <h1 style={{marginTop: "5vh"}}>
                     No Data Available for analysis.
                 </h1>
             </>)
@@ -534,6 +541,7 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                         scaleType: 'time',      
                         zoom: true,
                         name: "Day",
+                        showMark: false,
                         valueFormatter: (date) => {
                             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
                             return `${monthNames[date.getMonth()]} ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
@@ -548,13 +556,15 @@ export default function TownOverview({riskRatios, args, overlayRef, setArgs, set
                         )) : []]}
                         
                     height={300}
+                    
                     sx={{
                         '.MuiChartsAxis-line': { stroke: '#fff !important' },       // axis lines white
                         '.MuiChartsAxis-tick': { stroke: '#fff !important' },       // tick marks white
                         '.MuiChartsAxis-tickLabel': { fill: '#fff !important' },    // tick text white
                         '.MuiChartsLegend-root': { color: '#fff !important' },      // legend white
                         '.MuiChartsTooltip-root': { color: '#fff !important' },     // tooltip text black
-                        '.MuiChartsTooltip-paper': { background: '#fff !important' } // tooltip background white
+                        '.MuiChartsTooltip-paper': { background: '#fff !important' }, // tooltip background white
+                        '.MuiChartsTooltip-mark': {display: "none"}
                     }}
                     >
                     
