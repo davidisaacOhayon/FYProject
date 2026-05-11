@@ -15,7 +15,7 @@ import datetime
 import logging
 from contextlib import asynccontextmanager
 from sklearn.cluster import KMeans
-
+from dotenv import load_dotenv
 
 import pandas as pd
 import os
@@ -74,7 +74,13 @@ logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
 
 class APIServer:
-    def __init__(self, dbprocessor: bool = False):
+    def __init__(self, interpolate : bool = False, stations_only : bool = False):
+
+        # Interpolate Datasets 
+        self.interpolate = interpolate
+
+        # Process only station readings
+        self.stations_only = stations_only
 
         self.pollutantDBKeyMap = {
                 "SO2" : "so_ugm3",
@@ -93,9 +99,13 @@ class APIServer:
             "O3": 60
         }
 
+        load_dotenv(dotenv_path="./.env")
+
         # Ensure that the database URL is correctly set.
-        self.db_url = "mysql+pymysql://root:TriCeption123@localhost:3306/fydb"
+        self.db_url = f"mysql+pymysql://root:{os.getenv("DB_PASSWORD")}@localhost:{os.getenv("DB_PORT")}/{os.getenv("DB_NAME")}"
+
         self.engine = create_engine(self.db_url, echo=True)
+
         self.dirPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Datasets")
 
         self.stations = ["Msida","St. Paul's Bay", "Gharb", "Attard", "Zejtun"]
@@ -112,7 +122,7 @@ class APIServer:
         if not self.check_db_connection():
             raise Exception("Database connection failed.")
         
-        self.populate_db() if dbprocessor else None
+        self.populate_db() if interpolate or stations_only else None
 
         self.register_routes()
     
@@ -284,7 +294,7 @@ class APIServer:
            Multiple datasets from multiple years can be extracted but make sure no collisions occur.
         '''
         with Session(self.engine) as session:
-            logger.debug("Populating The Database bro")
+
             # Keep track of usable dataset length (typically 365)
             lim = self.__getUsableDatasetLength(path)
 
@@ -342,7 +352,11 @@ class APIServer:
             stations = pd.ExcelFile(path).sheet_names
 
             # Populate Station readings into DB
-            # self.__populate_station_readings(path, stations)
+            self.__populate_station_readings(path, stations)
+
+            # Check if user wants stations only
+            if self.stations_only:
+                return
             
             # Keep track of usable dataset length (typically 365)
             lim = self.__getUsableDatasetLength(path)
@@ -881,8 +895,5 @@ class APIServer:
 
     
 # ================= RUN =================
-
-
-
-server = APIServer(dbprocessor=False)
+server = APIServer(interpolate=False, stations_only=False)
 app = server.app
