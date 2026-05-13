@@ -43,5 +43,37 @@ If you simply wish to just populate the database with the readings provided, sim
 Please do note however that if multiple datasets are to be used, ensure no collisions between the data on the date period they are recorded. This may hinder performance and cause visual bugs.
 
 
+## Running Guide
+
+To run this application you will require two terminals to run both the frontend and the backend.
+
+### Frontend
+On your terminal, cd to the frontend directory and run 
+```cmd
+npm install
+```
+To install the necessary dependencies 
+
+After which, on the terminal you can run the react application using
+
+```cmd
+npm start
+```
+
+### Backend
+On your terminal, cd to the backend directory and run 
+```cmd
+pip install -r requirements.txt
+```
+
+To install the necessary dependencies.
+After which, on the terminal you can run the FastAPI application
+
+```cmd
+fastapi run
+```
+
+Note: If you require a virtual environment, you can activate that and run the same procedures as above.
+
 
 
