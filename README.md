@@ -70,10 +70,17 @@ To install the necessary dependencies.
 After which, on the terminal you can run the FastAPI application
 
 ```cmd
-fastapi run
+fastapi run Server.py
 ```
 
 Note: If you require a virtual environment, you can activate that and run the same procedures as above.
 
+### It is imperative that the backend application is running on Port 8000.
+If it comes to be that the port cannot be run on 8000, please do take note of it and adjust it to
+the ```proxy``` variable in the package.json file of the ```pyprojectreact``` frontend folder.
 
+Like so...
+```json
+"proxy" : "http://localhost:port"
+```
 
